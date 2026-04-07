@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,7 +37,9 @@ services:
 
   # Push schema + seed on first run (safe to re-run — seed uses upsert)
   migrate:
-    build: .
+    build:
+      context: .
+      target: builder    # use the builder stage — has full node_modules + Prisma 5 CLI
     container_name: homestack-migrate
     depends_on:
       postgres:
@@ -49,7 +49,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homestack.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-homestack}
     command: >
-      sh -c "npx prisma db push --skip-generate && npx tsx prisma/seed.ts"
+      sh -c "npx prisma db push && npx tsx prisma/seed.ts"
     networks:
       - homestack
     restart: "no"
