@@ -84,12 +84,12 @@ export default async function DashboardPage() {
               <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
                 <Boxes className="w-5 h-5 text-blue-400" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground/50 transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
+              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
             </div>
             <div>
               <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{services.length}</p>
               <p className="text-sm text-muted-foreground mt-2">Services</p>
-              <p className="text-xs text-muted-foreground/50 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {activeServices} active{warningServices > 0 && ` · ${warningServices} warning`}
               </p>
             </div>
@@ -100,12 +100,12 @@ export default async function DashboardPage() {
               <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <Server className="w-5 h-5 text-emerald-400" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground/50 transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
+              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
             </div>
             <div>
               <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{devices.length}</p>
               <p className="text-sm text-muted-foreground mt-2">Devices</p>
-              <p className="text-xs text-muted-foreground/50 mt-0.5">{onlineDevices} online</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{onlineDevices} online</p>
             </div>
           </Link>
 
@@ -114,12 +114,12 @@ export default async function DashboardPage() {
               <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
                 <Cpu className="w-5 h-5 text-violet-400" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground/50 transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
+              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
             </div>
             <div>
               <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{vms.length + lxcs.length}</p>
               <p className="text-sm text-muted-foreground mt-2">VMs &amp; LXCs</p>
-              <p className="text-xs text-muted-foreground/50 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {virtualHosts.length} {virtualHosts.length === 1 ? 'host' : 'hosts'}
               </p>
             </div>
@@ -130,12 +130,12 @@ export default async function DashboardPage() {
               <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <HardDrive className="w-5 h-5 text-amber-400" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground/50 transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
+              <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
             </div>
             <div>
               <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{backupJobs.length}</p>
               <p className="text-sm text-muted-foreground mt-2">Backup Jobs</p>
-              <p className="text-xs text-muted-foreground/50 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {successfulBackups} successful{failedBackups > 0 && ` · ${failedBackups} failed`}
               </p>
             </div>
@@ -155,7 +155,7 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                   <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                   <span className="text-sm font-semibold">Favourites</span>
-                  <span className="ml-auto text-xs text-muted-foreground/60 tabular-nums">{favouriteServices.length}</span>
+                  <span className="ml-auto text-xs text-muted-foreground tabular-nums">{favouriteServices.length}</span>
                 </div>
                 <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {favouriteServices.map(svc => (
@@ -171,8 +171,8 @@ export default async function DashboardPage() {
                 <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                   <Cpu className="w-3.5 h-3.5 text-violet-400" />
                   <span className="text-sm font-semibold">Virtualisation</span>
-                  <span className="text-xs text-muted-foreground/60 tabular-nums ml-1">{virtualHosts.length}</span>
-                  <Link href="/virtualisation" className="ml-auto text-xs text-muted-foreground/60 hover:text-foreground transition-colors">
+                  <span className="text-xs text-muted-foreground tabular-nums ml-1">{virtualHosts.length}</span>
+                  <Link href="/virtualisation" className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
                     View all →
                   </Link>
                 </div>
@@ -187,11 +187,11 @@ export default async function DashboardPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{host.name}</p>
-                          {host.ip && <p className="text-xs font-mono text-muted-foreground/60 mt-0.5">{host.ip}</p>}
+                          {host.ip && <p className="text-xs font-mono text-muted-foreground mt-0.5">{host.ip}</p>}
                         </div>
                         <StatusBadge status={host.status} />
                       </div>
-                      <div className="flex items-center gap-4 pt-2.5 border-t border-white/[0.05] text-xs text-muted-foreground/60">
+                      <div className="flex items-center gap-4 pt-2.5 border-t border-white/[0.05] text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5"><Cpu className="w-3 h-3" />{host.vms.length} VM{host.vms.length !== 1 ? 's' : ''}</span>
                         <span className="flex items-center gap-1.5"><Box className="w-3 h-3" />{host.lxcs.length} LXC{host.lxcs.length !== 1 ? 's' : ''}</span>
                       </div>
@@ -206,13 +206,13 @@ export default async function DashboardPage() {
               <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                 <Boxes className="w-3.5 h-3.5 text-blue-400" />
                 <span className="text-sm font-semibold">All Services</span>
-                <span className="text-xs text-muted-foreground/60 tabular-nums ml-1">{services.length}</span>
-                <Link href="/services" className="ml-auto text-xs text-muted-foreground/60 hover:text-foreground transition-colors">
+                <span className="text-xs text-muted-foreground tabular-nums ml-1">{services.length}</span>
+                <Link href="/services" className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
                   View all →
                 </Link>
               </div>
               {services.length === 0 ? (
-                <EmptyState icon={<Boxes className="w-8 h-8 text-muted-foreground/20" />} title="No services yet" description="Click Add New to register your first service." />
+                <EmptyState icon={<Boxes className="w-8 h-8 text-muted-foreground/40" />} title="No services yet" description="Click Add New to register your first service." />
               ) : (
                 <div className="p-4 space-y-5">
                   {Object.entries(servicesByHost).map(([host, svcs]) => (
@@ -241,13 +241,13 @@ export default async function DashboardPage() {
               <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                 <Activity className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="text-sm font-semibold">System Health</span>
-                <span className="ml-auto text-xs text-muted-foreground/60 tabular-nums">
+                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
                   {activeServices} / {services.length} active
                 </span>
               </div>
               <div className="p-5">
                 {services.length === 0 ? (
-                  <p className="text-sm text-muted-foreground/60 text-center py-4">No services to monitor.</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">No services to monitor.</p>
                 ) : (
                   <>
                     {/* Segmented bar */}
@@ -279,7 +279,7 @@ export default async function DashboardPage() {
                           <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dot)} />
                           <span className="flex-1 text-sm text-muted-foreground">{label}</span>
                           <span className="text-sm font-semibold tabular-nums">{count}</span>
-                          <span className="text-xs text-muted-foreground/40 w-9 text-right tabular-nums">
+                          <span className="text-xs text-muted-foreground w-9 text-right tabular-nums">
                             {Math.round((count / services.length) * 100)}%
                           </span>
                         </div>
@@ -308,12 +308,12 @@ export default async function DashboardPage() {
               <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                 <HardDrive className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-sm font-semibold">Recent Backups</span>
-                <Link href="/backups" className="ml-auto text-xs text-muted-foreground/60 hover:text-foreground transition-colors">
+                <Link href="/backups" className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
                   View all →
                 </Link>
               </div>
               {backupJobs.length === 0 ? (
-                <EmptyState icon={<HardDrive className="w-7 h-7 text-muted-foreground/20" />} title="No backup jobs" description="Configure backup jobs to protect your data." />
+                <EmptyState icon={<HardDrive className="w-7 h-7 text-muted-foreground/40" />} title="No backup jobs" description="Configure backup jobs to protect your data." />
               ) : (
                 <div className="divide-y divide-border">
                   {backupJobs.map(job => (
@@ -324,7 +324,7 @@ export default async function DashboardPage() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{job.name}</p>
-                        <p className="text-xs text-muted-foreground/50 mt-0.5 tabular-nums">{timeAgo(job.lastRun)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">{timeAgo(job.lastRun)}</p>
                       </div>
                       <BackupStatusBadge status={job.status} />
                     </Link>
@@ -363,7 +363,7 @@ function ServiceRow({ service }: {
           {service.favourite && <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />}
         </div>
         {service.category && (
-          <p className="text-xs text-muted-foreground/50 mt-0.5 truncate">{service.category}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{service.category}</p>
         )}
       </div>
       <StatusBadge status={service.status} />
@@ -379,8 +379,8 @@ function EmptyState({ icon, title, description }: {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
       <div className="mb-1 opacity-60">{icon}</div>
-      <p className="text-sm font-medium text-muted-foreground/70">{title}</p>
-      <p className="text-xs text-muted-foreground/40 max-w-[200px]">{description}</p>
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
+      <p className="text-xs text-muted-foreground max-w-[200px]">{description}</p>
     </div>
   )
 }

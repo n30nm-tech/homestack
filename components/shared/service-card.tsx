@@ -54,7 +54,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <StatusBadge status={service.status} />
           {service.category && (
-            <span className="text-[11px] text-muted-foreground/50 truncate">{service.category}</span>
+            <span className="text-[11px] text-muted-foreground truncate">{service.category}</span>
           )}
         </div>
       </div>
@@ -65,7 +65,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          className="relative z-10 shrink-0 p-1.5 rounded-lg text-muted-foreground/40
+          className="relative z-10 shrink-0 p-1.5 rounded-lg text-muted-foreground
                      hover:text-foreground transition-colors"
           style={{ background: 'transparent' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}

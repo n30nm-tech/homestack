@@ -44,7 +44,7 @@ export function Sidebar() {
         </div>
         <div className="min-w-0 leading-none">
           <p className="text-[13px] font-semibold tracking-tight text-foreground truncate">HomeStack</p>
-          <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 mt-0.5">homelab</p>
+          <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/80 mt-0.5">homelab</p>
         </div>
       </div>
 

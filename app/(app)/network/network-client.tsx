@@ -120,7 +120,7 @@ export function NetworkPageClient({ vlans: initialVlans, dnsRecords: initialDns,
                     <h3 className="text-sm font-medium">{vlan.name}</h3>
                     <span className="text-xs font-mono text-muted-foreground">VLAN {vlan.vlanId}</span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${vlan.internetAccess ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${vlan.internetAccess ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-muted-foreground bg-muted/40 border-border'}`}>
                     {vlan.internetAccess ? 'Internet' : 'Isolated'}
                   </span>
                 </div>
@@ -211,7 +211,7 @@ export function NetworkPageClient({ vlans: initialVlans, dnsRecords: initialDns,
                       {rp.targetIp ?? '—'}{rp.targetPort ? `:${rp.targetPort}` : ''}
                     </td>
                     <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${rp.ssl ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${rp.ssl ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-muted-foreground bg-muted/40 border-border'}`}>
                         {rp.ssl ? 'HTTPS' : 'HTTP'}
                       </span>
                     </td>

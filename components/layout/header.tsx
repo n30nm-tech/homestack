@@ -24,7 +24,7 @@ export function Header({ title, description }: HeaderProps) {
         <div className="flex-1 min-w-0">
           <h1 className="text-[15px] font-semibold truncate text-foreground">{title}</h1>
           {description && (
-            <p className="text-[11px] text-muted-foreground/70 truncate mt-px">{description}</p>
+            <p className="text-[11px] text-muted-foreground truncate mt-px">{description}</p>
           )}
         </div>
 
@@ -42,7 +42,7 @@ export function Header({ title, description }: HeaderProps) {
         >
           <Search className="w-3.5 h-3.5 shrink-0" />
           <span className="flex-1 text-left text-[13px]">Search…</span>
-          <kbd className="text-[10px] text-muted-foreground/50 font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border">
+          <kbd className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded border border-border">
             ⌘K
           </kbd>
         </button>
