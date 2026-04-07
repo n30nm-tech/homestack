@@ -1,0 +1,436 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Status {
+  ACTIVE
+  OFFLINE
+  WARNING
+  BUILD_IN_PROGRESS
+  RETIRED
+  UNKNOWN
+}
+
+enum DeviceType {
+  FIREWALL
+  SWITCH
+  ACCESS_POINT
+  ROUTER
+  SERVER
+  NAS
+  OTHER
+}
+
+enum VirtualHostType {
+  PROXMOX
+  HYPER_V
+  ESXI
+  KVM
+  VIRTUALBOX
+  OTHER
+}
+
+enum BackupStatus {
+  SUCCESS
+  FAILED
+  RUNNING
+  UNKNOWN
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Tags ────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id           String              @id @default(cuid())
+  name         String              @unique
+  color        String?
+  services     Service[]           @relation("ServiceTags")
+  devices      Device[]            @relation("DeviceTags")
+  vms          VM[]                @relation("VMTags")
+  lxcs         LXC[]               @relation("LXCTags")
+  dockerHosts  DockerHost[]        @relation("DockerHostTags")
+  virtualHosts VirtualHost[]       @relation("VirtualHostTags")
+  docs         DocumentationPage[] @relation("DocTags")
+  createdAt    DateTime            @default(now())
+}
+
+// ─── Devices ─────────────────────────────────────────────────────────────────
+
+model Device {
+  id                   String       @id @default(cuid())
+  name                 String
+  type                 DeviceType
+  brand                String?
+  model                String?
+  hostname             String?
+  managementIp         String?
+  mainIp               String?
+  macAddress           String?
+  serialNumber         String?
+  location             String?
+  rackRoom             String?
+  role                 String?
+  os                   String?
+  ports                String?
+  status               Status       @default(UNKNOWN)
+  archived             Boolean      @default(false)
+  favourite            Boolean      @default(false)
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  tags                 Tag[]        @relation("DeviceTags")
+  vlans                VLAN[]       @relation("DeviceVLANs")
+  services             Service[]
+  backupJobs           BackupJob[]  @relation("DeviceBackups")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]   @relation("DeviceAudit")
+  virtualHosts         VirtualHost[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+// ─── Virtualisation ───────────────────────────────────────────────────────────
+
+model VirtualHost {
+  id                   String          @id @default(cuid())
+  name                 String
+  type                 VirtualHostType
+  hostname             String?
+  ip                   String?
+  os                   String?
+  version              String?
+  cpu                  Int?
+  ram                  Int?
+  storage              String?
+  deviceId             String?
+  device               Device?         @relation(fields: [deviceId], references: [id])
+  status               Status          @default(UNKNOWN)
+  archived             Boolean         @default(false)
+  favourite            Boolean         @default(false)
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  vms                  VM[]
+  lxcs                 LXC[]
+  dockerHosts          DockerHost[]
+  services             Service[]
+  tags                 Tag[]           @relation("VirtualHostTags")
+  backupJobs           BackupJob[]     @relation("VirtualHostBackups")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]      @relation("VirtualHostAudit")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model VM {
+  id                   String       @id @default(cuid())
+  name                 String
+  vmid                 String?
+  hostname             String?
+  ip                   String?
+  os                   String?
+  cpu                  Int?
+  ram                  Int?
+  disk                 Int?
+  status               Status       @default(UNKNOWN)
+  archived             Boolean      @default(false)
+  favourite            Boolean      @default(false)
+  hostId               String
+  host                 VirtualHost  @relation(fields: [hostId], references: [id])
+  services             Service[]
+  dockerHosts          DockerHost[]
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  tags                 Tag[]        @relation("VMTags")
+  backupJobs           BackupJob[]  @relation("VMBackups")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]   @relation("VMAudit")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model LXC {
+  id                   String       @id @default(cuid())
+  name                 String
+  ctid                 String?  @map("container_id")
+  hostname             String?
+  ip                   String?
+  os                   String?
+  cpu                  Int?
+  ram                  Int?
+  disk                 Int?
+  status               Status       @default(UNKNOWN)
+  archived             Boolean      @default(false)
+  favourite            Boolean      @default(false)
+  hostId               String
+  host                 VirtualHost  @relation(fields: [hostId], references: [id])
+  services             Service[]
+  dockerHosts          DockerHost[]
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  tags                 Tag[]        @relation("LXCTags")
+  backupJobs           BackupJob[]  @relation("LXCBackups")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]   @relation("LXCAudit")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model DockerHost {
+  id                   String       @id @default(cuid())
+  name                 String
+  hostname             String?
+  ip                   String?
+  status               Status       @default(UNKNOWN)
+  archived             Boolean      @default(false)
+  favourite            Boolean      @default(false)
+  vmId                 String?
+  vm                   VM?          @relation(fields: [vmId], references: [id])
+  lxcId                String?
+  lxc                  LXC?         @relation(fields: [lxcId], references: [id])
+  virtualHostId        String?
+  virtualHost          VirtualHost? @relation(fields: [virtualHostId], references: [id])
+  services             Service[]
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  tags                 Tag[]        @relation("DockerHostTags")
+  backupJobs           BackupJob[]  @relation("DockerHostBackups")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]   @relation("DockerHostAudit")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+// ─── Services ────────────────────────────────────────────────────────────────
+
+model Service {
+  id                   String       @id @default(cuid())
+  name                 String
+  url                  String?
+  status               Status       @default(UNKNOWN)
+  description          String?
+  ip                   String?
+  port                 Int?
+  category             String?
+  archived             Boolean      @default(false)
+  favourite            Boolean      @default(false)
+
+  // Hosting location (only one should be set)
+  deviceId             String?
+  device               Device?      @relation(fields: [deviceId], references: [id])
+  virtualHostId        String?
+  virtualHost          VirtualHost? @relation(fields: [virtualHostId], references: [id])
+  vmId                 String?
+  vm                   VM?          @relation(fields: [vmId], references: [id])
+  lxcId                String?
+  lxc                  LXC?         @relation(fields: [lxcId], references: [id])
+  dockerHostId         String?
+  dockerHost           DockerHost?  @relation(fields: [dockerHostId], references: [id])
+
+  // Config sections (stored as text/markdown)
+  dockerCompose        String?
+  envVars              String?
+  setupSteps           String?
+  runCommands          String?
+  reverseProxyConfig   String?
+
+  // Notes
+  notes                String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+
+  dnsRecords           DNSRecord[]
+  reverseProxies       ReverseProxy[]
+  backupJobs           BackupJob[]    @relation("ServiceBackups")
+  tags                 Tag[]          @relation("ServiceTags")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]     @relation("ServiceAudit")
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
+// ─── Network ─────────────────────────────────────────────────────────────────
+
+model VLAN {
+  id             String       @id @default(cuid())
+  name           String
+  vlanId         Int
+  subnet         String?
+  gateway        String?
+  purpose        String?
+  dhcpRange      String?
+  dnsServer      String?
+  internetAccess Boolean      @default(true)
+  archived       Boolean      @default(false)
+  notes          String?
+  devices        Device[]     @relation("DeviceVLANs")
+  auditLogs      AuditLog[]   @relation("VLANAudit")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model DNSRecord {
+  id         String    @id @default(cuid())
+  ip         String?
+  recordName String
+  domain     String?
+  serviceId  String?
+  service    Service?  @relation(fields: [serviceId], references: [id])
+  archived   Boolean   @default(false)
+  notes      String?
+  auditLogs  AuditLog[] @relation("DNSAudit")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model ReverseProxy {
+  id         String    @id @default(cuid())
+  name       String
+  domain     String?
+  serviceId  String?
+  service    Service?  @relation(fields: [serviceId], references: [id])
+  targetIp   String?
+  targetPort Int?
+  ssl        Boolean   @default(true)
+  archived   Boolean   @default(false)
+  notes      String?
+  auditLogs  AuditLog[] @relation("ProxyAudit")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// ─── Backups ─────────────────────────────────────────────────────────────────
+
+model BackupJob {
+  id            String       @id @default(cuid())
+  name          String
+  description   String?
+  destination   String?
+  backupType    String?
+  schedule      String?
+  retention     String?
+  lastRun       DateTime?
+  status        BackupStatus @default(UNKNOWN)
+  tool          String?
+  archived      Boolean      @default(false)
+  notes         String?
+
+  serviceId     String?
+  service       Service?     @relation("ServiceBackups", fields: [serviceId], references: [id])
+  deviceId      String?
+  device        Device?      @relation("DeviceBackups", fields: [deviceId], references: [id])
+  vmId          String?
+  vm            VM?          @relation("VMBackups", fields: [vmId], references: [id])
+  lxcId         String?
+  lxc           LXC?         @relation("LXCBackups", fields: [lxcId], references: [id])
+  dockerHostId  String?
+  dockerHost    DockerHost?  @relation("DockerHostBackups", fields: [dockerHostId], references: [id])
+  virtualHostId String?
+  virtualHost   VirtualHost? @relation("VirtualHostBackups", fields: [virtualHostId], references: [id])
+
+  auditLogs     AuditLog[]   @relation("BackupAudit")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// ─── Documentation ───────────────────────────────────────────────────────────
+
+model DocumentationPage {
+  id                   String       @id @default(cuid())
+  title                String
+  content              String?
+  setupNotes           String?
+  troubleshootingNotes String?
+  extraInfo            String?
+  archived             Boolean      @default(false)
+  tags                 Tag[]        @relation("DocTags")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]   @relation("DocAudit")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+// ─── Attachments ─────────────────────────────────────────────────────────────
+
+model Attachment {
+  id            String             @id @default(cuid())
+  filename      String
+  url           String
+  mimeType      String?
+  size          Int?
+  serviceId     String?
+  service       Service?           @relation(fields: [serviceId], references: [id])
+  deviceId      String?
+  device        Device?            @relation(fields: [deviceId], references: [id])
+  vmId          String?
+  vm            VM?                @relation(fields: [vmId], references: [id])
+  lxcId         String?
+  lxc           LXC?               @relation(fields: [lxcId], references: [id])
+  dockerHostId  String?
+  dockerHost    DockerHost?        @relation(fields: [dockerHostId], references: [id])
+  virtualHostId String?
+  virtualHost   VirtualHost?       @relation(fields: [virtualHostId], references: [id])
+  docPageId     String?
+  docPage       DocumentationPage? @relation(fields: [docPageId], references: [id])
+  createdAt     DateTime           @default(now())
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String             @id @default(cuid())
+  action        String
+  entityType    String
+  entityId      String
+  entityName    String?
+  changes       Json?
+  serviceId     String?
+  service       Service?           @relation("ServiceAudit", fields: [serviceId], references: [id])
+  deviceId      String?
+  device        Device?            @relation("DeviceAudit", fields: [deviceId], references: [id])
+  vmId          String?
+  vm            VM?                @relation("VMAudit", fields: [vmId], references: [id])
+  lxcId         String?
+  lxc           LXC?               @relation("LXCAudit", fields: [lxcId], references: [id])
+  dockerHostId  String?
+  dockerHost    DockerHost?        @relation("DockerHostAudit", fields: [dockerHostId], references: [id])
+  virtualHostId String?
+  virtualHost   VirtualHost?       @relation("VirtualHostAudit", fields: [virtualHostId], references: [id])
+  backupJobId   String?
+  backupJob     BackupJob?         @relation("BackupAudit", fields: [backupJobId], references: [id])
+  dnsRecordId   String?
+  dnsRecord     DNSRecord?         @relation("DNSAudit", fields: [dnsRecordId], references: [id])
+  reverseProxyId String?
+  reverseProxy  ReverseProxy?      @relation("ProxyAudit", fields: [reverseProxyId], references: [id])
+  vlanId        String?
+  vlan          VLAN?              @relation("VLANAudit", fields: [vlanId], references: [id])
+  docPageId     String?
+  docPage       DocumentationPage? @relation("DocAudit", fields: [docPageId], references: [id])
+  createdAt     DateTime           @default(now())
+}

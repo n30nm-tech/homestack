@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: homestack-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: homestack
+      POSTGRES_USER: homestack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-homestack}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homestack"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - homestack
+
+  app:
+    build: .
+    container_name: homestack-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://homestack:${POSTGRES_PASSWORD:-homestack}@postgres:5432/homestack
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homestack.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-homestack}
+    ports:
+      - "${PORT:-3000}:3000"
+    networks:
+      - homestack
+
+  # Push schema + seed on first run (safe to re-run — seed uses upsert)
+  migrate:
+    build: .
+    container_name: homestack-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://homestack:${POSTGRES_PASSWORD:-homestack}@postgres:5432/homestack
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homestack.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-homestack}
+    command: >
+      sh -c "npx prisma db push --skip-generate && npx tsx prisma/seed.ts"
+    networks:
+      - homestack
+    restart: "no"
+
+volumes:
+  postgres_data:
+
+networks:
+  homestack:
+    driver: bridge

@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Surfaces — layered dark blue-tinted blacks ── */
+    --background:             222 24% 4%;     /* #060810 */
+    --foreground:             210 18% 94%;    /* #ecf0f7 */
+
+    --card:                   222 24% 7%;     /* #0c0f1c */
+    --card-foreground:        210 18% 94%;
+
+    --popover:                222 24% 8%;
+    --popover-foreground:     210 18% 94%;
+
+    /* ── Primary — electric blue, used consistently ── */
+    --primary:                217 91% 60%;    /* #3b82f6 */
+    --primary-foreground:     0   0%  100%;
+
+    /* ── Neutral UI surfaces ── */
+    --secondary:              222 22% 11%;    /* #131826 */
+    --secondary-foreground:   215 18% 68%;
+
+    --muted:                  222 22% 9%;     /* #0f1322 */
+    --muted-foreground:       220 14% 46%;    /* #64718a */
+
+    --accent:                 222 22% 12%;
+    --accent-foreground:      210 18% 90%;
+
+    /* ── Semantic ── */
+    --destructive:            0   84% 60%;
+    --destructive-foreground: 0   0%  98%;
+
+    /* ── Borders — visible but not harsh ── */
+    --border:                 222 22% 14%;    /* #181e2e */
+    --input:                  222 22% 14%;
+    --ring:                   217 91% 60%;
+
+    /* ── Shape ── */
+    --radius:                 0.875rem;       /* 14px */
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/30 rounded-full; }
+}
+
+@layer components {
+
+  /* ─────────────────────────────────────────────
+     Layout
+  ───────────────────────────────────────────── */
+  .page-container {
+    @apply px-6 py-8 space-y-6;
+  }
+
+  /* ─────────────────────────────────────────────
+     Cards
+  ───────────────────────────────────────────── */
+
+  /* General card — used on all detail pages */
+  .section-card {
+    @apply rounded-[var(--radius)] border border-border bg-card p-6
+           transition-colors duration-200;
+  }
+
+  /* Dashboard panel shell — header + body pattern */
+  .dash-section {
+    @apply rounded-[var(--radius)] border border-border bg-card overflow-hidden
+           transition-all duration-200;
+  }
+  .dash-section:hover {
+    border-color: rgba(255,255,255,0.07);
+  }
+
+  /* KPI stat card — large number, link wrapper */
+  .kpi-card {
+    @apply rounded-[var(--radius)] border border-border bg-card p-5
+           flex flex-col gap-4 transition-all duration-200;
+  }
+  .kpi-card:hover {
+    border-color: rgba(255,255,255,0.08);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 8px 32px -8px rgba(59,130,246,0.12);
+  }
+
+  /* Generic interactive card (other pages) */
+  .section-card-interactive {
+    @apply section-card cursor-pointer;
+  }
+  .section-card-interactive:hover {
+    border-color: rgba(255,255,255,0.07);
+    box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4);
+  }
+
+  /* ─────────────────────────────────────────────
+     Navigation
+  ───────────────────────────────────────────── */
+  .nav-item {
+    @apply relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+           text-muted-foreground transition-all duration-150
+           hover:text-foreground;
+  }
+  .nav-item:hover {
+    background-color: rgba(255,255,255,0.04);
+  }
+  .nav-item-active {
+    @apply text-foreground;
+    background-color: hsl(217 91% 60% / 0.1);
+  }
+
+  /* ─────────────────────────────────────────────
+     Typography helpers
+  ───────────────────────────────────────────── */
+  .field-label  { @apply text-xs font-medium text-muted-foreground uppercase tracking-wider; }
+  .field-value  { @apply text-sm text-foreground; }
+  .detail-grid  { @apply grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5; }
+  .page-title   { @apply text-2xl font-semibold tracking-tight; }
+  .page-description { @apply text-sm text-muted-foreground mt-1; }
+  .section-heading {
+    @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/50;
+  }
+
+  /* ─────────────────────────────────────────────
+     Code blocks
+  ───────────────────────────────────────────── */
+  .code-block {
+    @apply relative rounded-xl border border-border overflow-hidden;
+    background: hsl(222 24% 4%);
+  }
+}
+
+/* ─────────────────────────────────────────────────
+   Animations
+──────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
