@@ -40,3 +40,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   await createAuditLog('UPDATE', 'DockerHost', updated.id, updated.name, { dockerHostId: updated.id })
   return NextResponse.json(updated)
 }
+
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const updated = await prisma.dockerHost.update({ where: { id }, data: { archived: true } })
+  await createAuditLog('DELETE', 'DockerHost', updated.id, updated.name, { dockerHostId: updated.id })
+  return NextResponse.json({ ok: true })
+}
