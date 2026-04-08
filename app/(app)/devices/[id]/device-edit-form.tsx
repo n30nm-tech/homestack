@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Edit, Archive, Star } from 'lucide-react'
+import { Edit, Archive, Star, Trash2 } from 'lucide-react'
 import { DeviceType } from '@prisma/client'
 
 export function DeviceEditForm({ device }: { device: any }) {
@@ -68,6 +68,14 @@ export function DeviceEditForm({ device }: { device: any }) {
     router.refresh()
   }
 
+  async function deletePermanently() {
+    if (!confirm('Permanently delete this device? This cannot be undone.')) return
+    const res = await fetch(`/api/devices/${device.id}?permanent=true`, { method: 'DELETE' })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error ?? 'Delete failed.'); return }
+    router.push('/devices')
+    router.refresh()
+  }
+
   return (
     <>
       <div className="flex items-center gap-2">
@@ -116,9 +124,14 @@ export function DeviceEditForm({ device }: { device: any }) {
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={archive}>
-              <Archive className="w-4 h-4" /> Archive
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={archive}>
+                <Archive className="w-4 h-4" /> Archive
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={deletePermanently}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>

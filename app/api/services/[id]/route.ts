@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -81,9 +81,19 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   const service = await prisma.service.findUnique({ where: { id: id } })
   if (!service) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Archive instead of hard delete by default
+  if (new URL(req.url).searchParams.get('permanent') === 'true') {
+    await prisma.$transaction([
+      prisma.dNSRecord.updateMany({ where: { serviceId: id }, data: { serviceId: null } }),
+      prisma.reverseProxy.updateMany({ where: { serviceId: id }, data: { serviceId: null } }),
+      prisma.backupJob.updateMany({ where: { serviceId: id }, data: { serviceId: null } }),
+      prisma.attachment.deleteMany({ where: { serviceId: id } }),
+      prisma.auditLog.deleteMany({ where: { serviceId: id } }),
+      prisma.service.delete({ where: { id } }),
+    ])
+    return NextResponse.json({ ok: true })
+  }
+
   await prisma.service.update({ where: { id: id }, data: { archived: true } })
   await createAuditLog('ARCHIVE', 'Service', service.id, service.name, { serviceId: service.id })
-
   return NextResponse.json({ ok: true })
 }

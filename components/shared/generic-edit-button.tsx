@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Edit, Archive } from 'lucide-react'
+import { Edit, Archive, Trash2 } from 'lucide-react'
 
 const TEXT_AREA_FIELDS = ['notes', 'setupNotes', 'troubleshootingNotes', 'extraInfo', 'content', 'description']
 const SELECT_FIELDS = ['status']
@@ -102,6 +102,18 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
     router.refresh()
   }
 
+  async function deletePermanently() {
+    if (!confirm(`Permanently delete this ${label.toLowerCase()}? This cannot be undone.`)) return
+    const res = await fetch(`${apiPath}/${id}?permanent=true`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? 'Delete failed.')
+      return
+    }
+    if (redirectPath) router.push(redirectPath)
+    router.refresh()
+  }
+
   const hasArchive = typeof (currentData as any).archived !== 'undefined'
 
   return (
@@ -151,10 +163,15 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-            <div>
+            <div className="flex gap-1">
               {hasArchive && (
-                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={archive}>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={archive}>
                   <Archive className="w-4 h-4" /> Archive
+                </Button>
+              )}
+              {hasArchive && (
+                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={deletePermanently}>
+                  <Trash2 className="w-4 h-4" /> Delete
                 </Button>
               )}
             </div>

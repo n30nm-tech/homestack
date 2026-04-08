@@ -44,11 +44,26 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const lxc = await prisma.lXC.findUnique({ where: { id } })
+  if (!lxc) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (new URL(req.url).searchParams.get('permanent') === 'true') {
+    await prisma.$transaction([
+      prisma.dockerHost.updateMany({ where: { lxcId: id }, data: { lxcId: null } }),
+      prisma.service.updateMany({ where: { lxcId: id }, data: { lxcId: null } }),
+      prisma.backupJob.updateMany({ where: { lxcId: id }, data: { lxcId: null } }),
+      prisma.attachment.deleteMany({ where: { lxcId: id } }),
+      prisma.auditLog.deleteMany({ where: { lxcId: id } }),
+      prisma.lXC.delete({ where: { id } }),
+    ])
+    return NextResponse.json({ ok: true })
+  }
+
   const updated = await prisma.lXC.update({ where: { id }, data: { archived: true } })
-  await createAuditLog('DELETE', 'LXC', updated.id, updated.name, { lxcId: updated.id })
+  await createAuditLog('ARCHIVE', 'LXC', updated.id, updated.name, { lxcId: updated.id })
   return NextResponse.json({ ok: true })
 }

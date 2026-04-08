@@ -65,7 +65,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -73,8 +73,19 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   const device = await prisma.device.findUnique({ where: { id: id } })
   if (!device) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  if (new URL(req.url).searchParams.get('permanent') === 'true') {
+    await prisma.$transaction([
+      prisma.service.updateMany({ where: { deviceId: id }, data: { deviceId: null } }),
+      prisma.virtualHost.updateMany({ where: { deviceId: id }, data: { deviceId: null } }),
+      prisma.backupJob.updateMany({ where: { deviceId: id }, data: { deviceId: null } }),
+      prisma.attachment.deleteMany({ where: { deviceId: id } }),
+      prisma.auditLog.deleteMany({ where: { deviceId: id } }),
+      prisma.device.delete({ where: { id } }),
+    ])
+    return NextResponse.json({ ok: true })
+  }
+
   await prisma.device.update({ where: { id: id }, data: { archived: true } })
   await createAuditLog('ARCHIVE', 'Device', device.id, device.name, { deviceId: device.id })
-
   return NextResponse.json({ ok: true })
 }

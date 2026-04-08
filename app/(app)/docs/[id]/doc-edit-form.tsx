@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Edit, Archive, Download } from 'lucide-react'
+import { Edit, Archive, Download, Trash2 } from 'lucide-react'
 
 interface DocEditFormProps {
   page: {
@@ -55,6 +55,14 @@ export function DocEditForm({ page }: DocEditFormProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ archived: true }),
     })
+    router.push('/docs')
+    router.refresh()
+  }
+
+  async function deletePermanently() {
+    if (!confirm('Permanently delete this page? This cannot be undone.')) return
+    const res = await fetch(`/api/docs/${page.id}?permanent=true`, { method: 'DELETE' })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error ?? 'Delete failed.'); return }
     router.push('/docs')
     router.refresh()
   }
@@ -110,10 +118,14 @@ export function DocEditForm({ page }: DocEditFormProps) {
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={archive}>
-              <Archive className="w-4 h-4" />
-              Archive
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={archive}>
+                <Archive className="w-4 h-4" /> Archive
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={deletePermanently}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>

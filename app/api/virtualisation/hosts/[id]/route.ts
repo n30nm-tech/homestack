@@ -62,11 +62,28 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const host = await prisma.virtualHost.findUnique({ where: { id }, include: { vms: { select: { id: true } }, lxcs: { select: { id: true } } } })
+  if (!host) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (new URL(req.url).searchParams.get('permanent') === 'true') {
+    if (host.vms.length > 0 || host.lxcs.length > 0)
+      return NextResponse.json({ error: 'Archive or delete all VMs and LXCs on this host first.' }, { status: 409 })
+    await prisma.$transaction([
+      prisma.service.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
+      prisma.dockerHost.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
+      prisma.backupJob.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
+      prisma.attachment.deleteMany({ where: { virtualHostId: id } }),
+      prisma.auditLog.deleteMany({ where: { virtualHostId: id } }),
+      prisma.virtualHost.delete({ where: { id } }),
+    ])
+    return NextResponse.json({ ok: true })
+  }
+
   const updated = await prisma.virtualHost.update({ where: { id }, data: { archived: true } })
-  await createAuditLog('DELETE', 'VirtualHost', updated.id, updated.name, { virtualHostId: updated.id })
+  await createAuditLog('ARCHIVE', 'VirtualHost', updated.id, updated.name, { virtualHostId: updated.id })
   return NextResponse.json({ ok: true })
 }

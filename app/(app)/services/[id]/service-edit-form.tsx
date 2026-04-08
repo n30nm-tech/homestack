@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Star, Archive } from 'lucide-react'
+import { Edit, Star, Archive, Trash2 } from 'lucide-react'
 
 interface ServiceEditFormProps {
   service: {
@@ -96,6 +96,14 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   async function archive() {
     if (!confirm('Archive this service? It will be hidden from the main views.')) return
     await fetch(`/api/services/${service.id}`, { method: 'DELETE' })
+    router.push('/services')
+    router.refresh()
+  }
+
+  async function deletePermanently() {
+    if (!confirm('Permanently delete this service? This cannot be undone.')) return
+    const res = await fetch(`/api/services/${service.id}?permanent=true`, { method: 'DELETE' })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error ?? 'Delete failed.'); return }
     router.push('/services')
     router.refresh()
   }
@@ -212,10 +220,14 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
           </Tabs>
 
           <div className="flex items-center justify-between pt-4 border-t border-border">
-            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={archive}>
-              <Archive className="w-4 h-4" />
-              Archive
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={archive}>
+                <Archive className="w-4 h-4" /> Archive
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300" onClick={deletePermanently}>
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
