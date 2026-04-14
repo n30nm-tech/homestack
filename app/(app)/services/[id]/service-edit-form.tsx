@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Edit, Star, Archive, Trash2 } from 'lucide-react'
+import { IconPicker } from '@/components/shared/icon-picker'
 
 interface ServiceEditFormProps {
   service: {
@@ -23,6 +24,7 @@ interface ServiceEditFormProps {
     status: string
     favourite: boolean
     archived: boolean
+    icon: string | null
     dockerCompose: string | null
     envVars: string | null
     setupSteps: string | null
@@ -40,6 +42,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [icon, setIcon] = useState<string | null>(service.icon)
   const [form, setForm] = useState({
     name: service.name,
     url: service.url ?? '',
@@ -74,6 +77,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
         body: JSON.stringify({
           ...form,
           port: form.port ? parseInt(form.port) : null,
+          icon,
         }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); setSaving(false); return }
@@ -138,6 +142,10 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                 <div className="col-span-2 space-y-1.5">
                   <Label>Name</Label>
                   <Input value={form.name} onChange={e => set('name', e.target.value)} />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Icon</Label>
+                  <IconPicker value={icon} onChange={setIcon} />
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>URL</Label>

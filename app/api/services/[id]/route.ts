@@ -51,6 +51,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       status: (body.status as Status) ?? current.status,
       favourite: typeof body.favourite === 'boolean' ? body.favourite : current.favourite,
       archived: typeof body.archived === 'boolean' ? body.archived : current.archived,
+      icon: 'icon' in body ? (body.icon || null) : current.icon,
       deviceId: 'deviceId' in body ? (body.deviceId || null) : current.deviceId,
       virtualHostId: 'virtualHostId' in body ? (body.virtualHostId || null) : current.virtualHostId,
       vmId: 'vmId' in body ? (body.vmId || null) : current.vmId,

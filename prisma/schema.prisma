@@ -239,6 +239,7 @@ model Service {
   category             String?
   archived             Boolean      @default(false)
   favourite            Boolean      @default(false)
+  icon                 String?
 
   // Hosting location (only one should be set)
   deviceId             String?

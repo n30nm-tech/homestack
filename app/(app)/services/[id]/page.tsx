@@ -9,6 +9,7 @@ import { ServiceEditForm } from './service-edit-form'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star, Download } from 'lucide-react'
+import { iconUrl } from '@/components/shared/icon-picker'
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
@@ -47,6 +48,9 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
+              {service.icon && (
+                <img src={iconUrl(service.icon)} alt="" className="w-8 h-8 rounded object-contain" />
+              )}
               <StatusBadge status={service.status} />
               {service.favourite && (
                 <span className="flex items-center gap-1 text-xs text-amber-400">

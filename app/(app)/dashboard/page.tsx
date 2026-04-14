@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { BackupStatusBadge } from '@/components/shared/status-badge'
+import { iconUrl } from '@/components/shared/icon-picker'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import {
@@ -349,6 +350,7 @@ function ServiceRow({ service }: {
     status: import('@prisma/client').Status
     category: string | null
     favourite: boolean
+    icon: string | null
   }
 }) {
   return (
@@ -357,6 +359,9 @@ function ServiceRow({ service }: {
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent
                  hover:bg-white/[0.03] hover:border-white/[0.06] group transition-all duration-150"
     >
+      {service.icon && (
+        <img src={iconUrl(service.icon)} alt="" className="w-6 h-6 rounded object-contain shrink-0" />
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{service.name}</p>

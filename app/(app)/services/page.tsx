@@ -7,6 +7,7 @@ import { getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { iconUrl } from '@/components/shared/icon-picker'
 
 export const metadata = { title: 'Services' }
 
@@ -52,7 +53,11 @@ export default async function ServicesPage() {
                   <tr key={svc.id} className="hover:bg-muted/30 transition-colors group">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        {svc.favourite && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />}
+                        {svc.icon
+                          ? <img src={iconUrl(svc.icon)} alt="" className="w-6 h-6 rounded object-contain shrink-0" />
+                          : svc.favourite && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                        }
+                        {svc.icon && svc.favourite && <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />}
                         <div className="min-w-0">
                           <Link
                             href={`/services/${svc.id}`}

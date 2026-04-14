@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
 import { StatusBadge } from './status-badge'
+import { iconUrl } from './icon-picker'
 import { Status } from '@prisma/client'
 
 interface ServiceCardProps {
@@ -13,6 +14,7 @@ interface ServiceCardProps {
     status: Status
     category: string | null
     favourite: boolean
+    icon: string | null
   }
 }
 
@@ -41,6 +43,15 @@ export function ServiceCard({ service }: ServiceCardProps) {
         className="absolute inset-0 rounded-[var(--radius)]"
         aria-label={service.name}
       />
+
+      {service.icon && (
+        <img
+          src={iconUrl(service.icon)}
+          alt=""
+          className="w-7 h-7 rounded object-contain shrink-0"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+        />
+      )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-1">
