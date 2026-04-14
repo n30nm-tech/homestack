@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { createAuditLog } from '@/lib/audit'
+import { createAuditLog, diffRecords } from '@/lib/audit'
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
@@ -33,7 +33,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       archived: typeof body.archived === 'boolean' ? body.archived : current.archived,
     },
   })
-  await createAuditLog('UPDATE', 'DocumentationPage', updated.id, updated.title, { docPageId: updated.id })
+  const changes_dp = diffRecords(current as Record<string, unknown>, updated as Record<string, unknown>)
+  await createAuditLog('UPDATE', 'DocumentationPage', updated.id, updated.title, { docPageId: updated.id }, Object.keys(changes_dp).length ? changes_dp : undefined)
   return NextResponse.json(updated)
 }
 

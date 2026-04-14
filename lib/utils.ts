@@ -116,3 +116,10 @@ export function formatDateTime(date: Date | string | null | undefined): string {
 export function slugify(str: string): string {
   return str.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
 }
+
+/** Ensure a URL has a protocol so it opens as an absolute link, not a relative path. */
+export function ensureUrl(url: string): string {
+  if (!url) return url
+  if (/^https?:\/\//i.test(url)) return url
+  return `http://${url}`
+}

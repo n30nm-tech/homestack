@@ -145,13 +145,30 @@ export default async function DeviceDetailPage(props: { params: Promise<{ id: st
         {device.auditLogs.length > 0 && (
           <div className="section-card space-y-3">
             <h2 className="text-sm font-semibold">Change History</h2>
-            <div className="space-y-2">
-              {device.auditLogs.map(log => (
-                <div key={log.id} className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="w-32 shrink-0">{formatDateTime(log.createdAt)}</span>
-                  <span className="capitalize">{log.action.toLowerCase()}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {device.auditLogs.map(log => {
+                const changes = log.changes as Record<string, { from: unknown; to: unknown }> | null
+                return (
+                  <div key={log.id} className="text-xs space-y-1">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <span className="w-32 shrink-0 tabular-nums">{formatDateTime(log.createdAt)}</span>
+                      <span className="capitalize font-medium text-foreground">{log.action.toLowerCase()}</span>
+                    </div>
+                    {changes && Object.keys(changes).length > 0 && (
+                      <div className="ml-[8.5rem] space-y-0.5">
+                        {Object.entries(changes).map(([field, { from, to }]) => (
+                          <div key={field} className="flex items-baseline gap-1.5 text-muted-foreground">
+                            <span className="font-medium text-foreground/70 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                            {from !== null && from !== '' && <span className="line-through opacity-60">{String(from)}</span>}
+                            {from !== null && from !== '' && <span>→</span>}
+                            <span>{to !== null && to !== '' ? String(to) : <em>cleared</em>}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

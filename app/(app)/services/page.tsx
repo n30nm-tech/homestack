@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { TagList } from '@/components/shared/tag-badge'
-import { getHostingSummary } from '@/lib/utils'
+import { getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -80,7 +80,7 @@ export default async function ServicesPage() {
                     <td className="px-5 py-3.5">
                       {svc.url && (
                         <a
-                          href={svc.url}
+                          href={ensureUrl(svc.url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
