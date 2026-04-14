@@ -25,6 +25,10 @@ interface ServiceEditFormProps {
     favourite: boolean
     archived: boolean
     icon: string | null
+    containerImage: string | null
+    stackFolder: string | null
+    composeFilePath: string | null
+    bindMounts: string | null
     dockerCompose: string | null
     envVars: string | null
     setupSteps: string | null
@@ -52,6 +56,10 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
     category: service.category ?? '',
     status: service.status,
     favourite: service.favourite,
+    containerImage:  service.containerImage  ?? '',
+    stackFolder:     service.stackFolder     ?? '',
+    composeFilePath: service.composeFilePath ?? '',
+    bindMounts:      service.bindMounts      ?? '',
     dockerCompose: service.dockerCompose ?? '',
     envVars: service.envVars ?? '',
     setupSteps: service.setupSteps ?? '',
@@ -185,6 +193,24 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
             </TabsContent>
 
             <TabsContent value="config" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Container Image</Label>
+                  <Input value={form.containerImage} onChange={e => set('containerImage', e.target.value)} placeholder="ghcr.io/owner/image:latest" className="font-mono text-xs" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Stack Folder</Label>
+                  <Input value={form.stackFolder} onChange={e => set('stackFolder', e.target.value)} placeholder="/root/myapp" className="font-mono text-xs" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Compose File Path</Label>
+                  <Input value={form.composeFilePath} onChange={e => set('composeFilePath', e.target.value)} placeholder="/root/myapp/docker-compose.yml" className="font-mono text-xs" />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Bind Mounts</Label>
+                  <Textarea className="h-20 font-mono text-xs" value={form.bindMounts} onChange={e => set('bindMounts', e.target.value)} placeholder="./data:/app/data&#10;./config:/etc/app/config" />
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>Docker Compose</Label>

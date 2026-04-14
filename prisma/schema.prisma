@@ -253,6 +253,12 @@ model Service {
   dockerHostId         String?
   dockerHost           DockerHost?  @relation(fields: [dockerHostId], references: [id])
 
+  // Container / Docker metadata
+  containerImage       String?
+  stackFolder          String?
+  composeFilePath      String?
+  bindMounts           String?
+
   // Config sections (stored as text/markdown)
   dockerCompose        String?
   envVars              String?

@@ -44,6 +44,10 @@ export async function POST(req: NextRequest) {
       category: body.category || null,
       status: (body.status as Status) || 'UNKNOWN',
       icon: body.icon || null,
+      containerImage:  body.containerImage  || null,
+      stackFolder:     body.stackFolder     || null,
+      composeFilePath: body.composeFilePath || null,
+      bindMounts:      body.bindMounts      || null,
     },
   })
 

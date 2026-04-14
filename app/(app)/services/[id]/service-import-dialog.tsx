@@ -136,25 +136,21 @@ export function ServiceImportDialog({ serviceId }: ServiceImportDialogProps) {
     if (!parsed) return
     setSaving(true); setError('')
     try {
-      // Build the env vars template from names
       const envVarsTemplate = parsed.envVarNames.length > 0
         ? parsed.envVarNames.map(k => `${k}=`).join('\n')
         : null
 
-      // Build extra info from container metadata
-      const extraLines: string[] = []
-      if (parsed.image)        extraLines.push(`Image: ${parsed.image}`)
-      if (parsed.stackFolder)  extraLines.push(`Stack folder: ${parsed.stackFolder}`)
-      if (parsed.composeFile)  extraLines.push(`Compose file: ${parsed.composeFile}`)
-      if (parsed.bindMounts.length)  extraLines.push(`Bind mounts:\n${parsed.bindMounts.map(m => `  ${m}`).join('\n')}`)
-      if (parsed.namedVolumes.length) extraLines.push(`Named volumes:\n${parsed.namedVolumes.map(v => `  ${v}`).join('\n')}`)
-      if (parsed.networks.length)    extraLines.push(`Networks:\n${parsed.networks.map(n => `  ${n}`).join('\n')}`)
-      if (parsed.runningStatus)      extraLines.push(`Container status: ${parsed.runningStatus}`)
+      const bindMountsText = parsed.bindMounts.length > 0
+        ? parsed.bindMounts.join('\n')
+        : null
 
       const body: Record<string, unknown> = {}
-      if (parsed.port !== null) body.port = parsed.port
-      if (envVarsTemplate)      body.envVars = envVarsTemplate
-      if (extraLines.length)    body.extraInfo = extraLines.join('\n')
+      if (parsed.port !== null)    body.port            = parsed.port
+      if (envVarsTemplate)         body.envVars         = envVarsTemplate
+      if (parsed.image)            body.containerImage  = parsed.image
+      if (parsed.stackFolder)      body.stackFolder     = parsed.stackFolder
+      if (parsed.composeFile)      body.composeFilePath = parsed.composeFile
+      if (bindMountsText)          body.bindMounts      = bindMountsText
 
       const res = await fetch(`/api/services/${serviceId}`, {
         method: 'PATCH',

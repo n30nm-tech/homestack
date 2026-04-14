@@ -160,6 +160,24 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
           </div>
         )}
 
+        {/* Container metadata */}
+        {(service.containerImage || service.stackFolder || service.composeFilePath || service.bindMounts) && (
+          <div className="section-card space-y-5">
+            <h2 className="text-sm font-semibold">Container</h2>
+            <DetailGrid>
+              {service.containerImage  && <DetailField label="Image"        value={service.containerImage}  mono />}
+              {service.stackFolder     && <DetailField label="Stack folder"  value={service.stackFolder}     mono />}
+              {service.composeFilePath && <DetailField label="Compose file"  value={service.composeFilePath} mono />}
+            </DetailGrid>
+            {service.bindMounts && (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">Bind mounts</p>
+                <pre className="text-xs font-mono text-foreground whitespace-pre-wrap">{service.bindMounts}</pre>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Config sections */}
         {service.dockerCompose && (
           <div className="space-y-2">
