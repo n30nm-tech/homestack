@@ -6,7 +6,7 @@ import { TagList } from '@/components/shared/tag-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
 import { CodeBlock } from '@/components/shared/code-block'
 import { ServiceEditForm } from './service-edit-form'
-import { formatDateTime, getHostingSummary } from '@/lib/utils'
+import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star, Download } from 'lucide-react'
 
@@ -62,7 +62,7 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
           <div className="flex items-center gap-2 shrink-0">
             {service.url && (
               <a
-                href={service.url}
+                href={ensureUrl(service.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 h-9 px-3 rounded-lg border border-border bg-secondary text-sm font-medium hover:bg-muted transition-colors"
@@ -88,7 +88,7 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
           <DetailGrid>
             {service.url && (
               <DetailField label="URL" value={
-                <a href={service.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
+                <a href={ensureUrl(service.url)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
                   {service.url} <ExternalLink className="w-3 h-3" />
                 </a>
               } />

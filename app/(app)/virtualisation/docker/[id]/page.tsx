@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
 import { GenericEditButton } from '@/components/shared/generic-edit-button'
 import Link from 'next/link'
+import { ensureUrl } from '@/lib/utils'
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
@@ -86,7 +87,7 @@ export default async function DockerHostDetailPage(props: { params: Promise<{ id
                       <Link href={`/services/${svc.id}`} className="text-sm hover:text-primary transition-colors flex-1">{svc.name}</Link>
                       <StatusBadge status={svc.status} />
                       {svc.url && (
-                        <a href={svc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors">{svc.url}</a>
+                        <a href={ensureUrl(svc.url)} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors">{svc.url}</a>
                       )}
                     </div>
                   ))}
