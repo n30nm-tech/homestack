@@ -11,24 +11,43 @@ import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import {
   Boxes, Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
+  Container, LayoutGrid,
 } from 'lucide-react'
 
 type ItemType =
   | 'service' | 'device' | 'host' | 'vm' | 'lxc' | 'dockerhost'
   | 'vlan' | 'dns' | 'proxy' | 'backup' | 'doc'
 
-const ITEM_TYPES: { type: ItemType; label: string; description: string; icon: React.ElementType }[] = [
-  { type: 'service', label: 'Service', description: 'A software service or app running in the lab', icon: Boxes },
-  { type: 'device', label: 'Device', description: 'Physical hardware like a switch, NAS, or server', icon: Server },
-  { type: 'host', label: 'Virtualisation Host', description: 'A hypervisor like Proxmox or ESXi', icon: Cpu },
-  { type: 'vm', label: 'Virtual Machine', description: 'A VM running on a virtualisation host', icon: Cpu },
-  { type: 'lxc', label: 'LXC Container', description: 'A Linux container on a Proxmox host', icon: Cpu },
-  { type: 'dockerhost', label: 'Docker Host', description: 'A Docker daemon running services', icon: Cpu },
-  { type: 'vlan', label: 'VLAN', description: 'A network segment with an ID and subnet', icon: Network },
-  { type: 'dns', label: 'DNS Record', description: 'A local DNS entry pointing to a service', icon: Network },
-  { type: 'proxy', label: 'Reverse Proxy', description: 'A proxy entry publishing a service externally', icon: Network },
-  { type: 'backup', label: 'Backup Job', description: 'A scheduled backup for any item', icon: HardDrive },
-  { type: 'doc', label: 'Documentation Page', description: 'A standalone documentation or notes page', icon: FileText },
+const ITEM_GROUPS: {
+  label: string
+  items: { type: ItemType; label: string; description: string; icon: React.ElementType }[]
+}[] = [
+  {
+    label: 'Infrastructure — add these first',
+    items: [
+      { type: 'device',     label: 'Device',               description: 'A physical machine (server, NAS, switch). The hardware everything runs on.', icon: Server },
+      { type: 'host',       label: 'Virtualisation Host',  description: 'A hypervisor like Proxmox. Lives on a Device and runs VMs and LXCs.', icon: Cpu },
+      { type: 'vm',         label: 'Virtual Machine',      description: 'A VM inside Proxmox or similar. Needs a Virtualisation Host.', icon: LayoutGrid },
+      { type: 'lxc',        label: 'LXC Container',        description: 'A lightweight Linux container in Proxmox. Needs a Virtualisation Host.', icon: Container },
+      { type: 'dockerhost', label: 'Docker Host',          description: 'Docker running somewhere — on an LXC, VM, or bare-metal. Links Docker to where it lives.', icon: Boxes },
+    ],
+  },
+  {
+    label: 'Services & content',
+    items: [
+      { type: 'service', label: 'Service',            description: 'An app or service (Plex, Grafana, etc). Attach it to a Docker Host, LXC, VM, or Device.', icon: Boxes },
+      { type: 'backup',  label: 'Backup Job',         description: 'A scheduled backup job for any item.', icon: HardDrive },
+      { type: 'doc',     label: 'Documentation Page', description: 'Notes, setup guides, or runbooks.', icon: FileText },
+    ],
+  },
+  {
+    label: 'Network',
+    items: [
+      { type: 'vlan',  label: 'VLAN',          description: 'A network segment with an ID and subnet.', icon: Network },
+      { type: 'dns',   label: 'DNS Record',    description: 'A local DNS entry pointing to a service.', icon: Network },
+      { type: 'proxy', label: 'Reverse Proxy', description: 'A proxy entry publishing a service externally.', icon: Network },
+    ],
+  },
 ]
 
 interface CreateWizardProps {
@@ -160,7 +179,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === 'type' ? 'Add New Item' : `New ${ITEM_TYPES.find(t => t.type === selectedType)?.label}`}
+            {step === 'type' ? 'Add New Item' : `New ${ITEM_GROUPS.flatMap(g => g.items).find(t => t.type === selectedType)?.label}`}
           </DialogTitle>
           <DialogDescription>
             {step === 'type'
@@ -170,21 +189,49 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
         </DialogHeader>
 
         {step === 'type' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-            {ITEM_TYPES.map(({ type, label, description, icon: Icon }) => (
-              <button
-                key={type}
-                onClick={() => selectType(type)}
-                className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors group"
-              >
-                <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors shrink-0">
-                  <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className="mt-2 space-y-5">
+            {/* Typical stack callout */}
+            <div className="rounded-xl border border-border bg-white/[0.03] px-4 py-3 space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typical Proxmox + Docker setup</p>
+              <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                {[
+                  { label: 'Device', sub: 'physical server' },
+                  { label: 'Virtualisation Host', sub: 'Proxmox' },
+                  { label: 'LXC', sub: 'container' },
+                  { label: 'Docker Host', sub: 'Docker daemon' },
+                  { label: 'Service', sub: 'your app' },
+                ].map((step, i) => (
+                  <span key={step.label} className="flex items-center gap-1.5">
+                    {i > 0 && <span className="text-muted-foreground">→</span>}
+                    <span className="px-2 py-0.5 rounded-md bg-muted font-medium text-foreground">{step.label}</span>
+                    <span className="text-muted-foreground hidden sm:inline">({step.sub})</span>
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Add them in order — each links to the one before it. Services link to Docker Host.</p>
+            </div>
+
+            {ITEM_GROUPS.map(group => (
+              <div key={group.label} className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5">{group.label}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.items.map(({ type, label, description, icon: Icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => selectType(type)}
+                      className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 text-left transition-colors group"
+                    >
+                      <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors shrink-0">
+                        <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <p className="text-sm font-medium">{label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
-                </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -316,15 +363,18 @@ function ServiceForm({ data, onChange, related }: { data: Record<string, string>
 
       {/* Hosting */}
       <div className="border border-border rounded-xl p-4 space-y-3">
-        <p className="text-sm font-medium">Where is this service hosted?</p>
+        <div>
+          <p className="text-sm font-medium">Where is this service running?</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Running in Docker? Choose <strong>Docker Host</strong>. Running directly in an LXC without Docker? Choose <strong>LXC container</strong>.</p>
+        </div>
         <Select value={hostType} onValueChange={setHostType}>
-          <SelectTrigger><SelectValue placeholder="Choose hosting type…" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Choose…" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="dockerHost">Docker host</SelectItem>
-            <SelectItem value="lxc">LXC container</SelectItem>
-            <SelectItem value="vm">Virtual machine</SelectItem>
-            <SelectItem value="virtualHost">Virtualisation host (directly)</SelectItem>
-            <SelectItem value="device">Physical device</SelectItem>
+            <SelectItem value="dockerHost">In Docker (Docker Host)</SelectItem>
+            <SelectItem value="lxc">Directly in an LXC (no Docker)</SelectItem>
+            <SelectItem value="vm">Directly on a VM (no Docker)</SelectItem>
+            <SelectItem value="virtualHost">Directly on a hypervisor</SelectItem>
+            <SelectItem value="device">On a physical device</SelectItem>
           </SelectContent>
         </Select>
 
@@ -534,13 +584,16 @@ function DockerHostForm({ data, onChange, related }: { data: Record<string, stri
       </div>
 
       <div className="border border-border rounded-xl p-4 space-y-3">
-        <p className="text-sm font-medium">Where is this Docker running?</p>
+        <div>
+          <p className="text-sm font-medium">Where is Docker running?</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Most common: <strong>On an LXC</strong> — Docker installed inside a Proxmox LXC container.</p>
+        </div>
         <Select value={runningOn} onValueChange={setRunningOn}>
           <SelectTrigger><SelectValue placeholder="Choose…" /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="lxc">On an LXC container (most common)</SelectItem>
             <SelectItem value="vm">On a VM</SelectItem>
-            <SelectItem value="lxc">On an LXC</SelectItem>
-            <SelectItem value="host">Directly on a host</SelectItem>
+            <SelectItem value="host">Directly on a hypervisor</SelectItem>
           </SelectContent>
         </Select>
         {runningOn === 'vm' && (
