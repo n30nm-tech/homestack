@@ -123,3 +123,10 @@ export function ensureUrl(url: string): string {
   if (/^https?:\/\//i.test(url)) return url
   return `http://${url}`
 }
+
+const ICON_CDN = 'https://cdn.jsdelivr.net/gh/selfhst/icons@main'
+
+/** Return the WebP URL for a selfh.st icon reference slug. */
+export function iconUrl(reference: string): string {
+  return `${ICON_CDN}/webp/${reference}.webp`
+}

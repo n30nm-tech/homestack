@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
 import { StatusBadge } from './status-badge'
-import { iconUrl } from './icon-picker'
+import { iconUrl } from '@/lib/utils'
 import { Status } from '@prisma/client'
 
 interface ServiceCardProps {

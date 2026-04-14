@@ -7,7 +7,7 @@ import { getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { iconUrl } from '@/components/shared/icon-picker'
+import { iconUrl } from '@/lib/utils'
 
 export const metadata = { title: 'Services' }
 

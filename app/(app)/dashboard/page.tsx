@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { BackupStatusBadge } from '@/components/shared/status-badge'
-import { iconUrl } from '@/components/shared/icon-picker'
+import { iconUrl } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import {

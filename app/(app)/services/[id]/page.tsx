@@ -9,7 +9,7 @@ import { ServiceEditForm } from './service-edit-form'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star, Download } from 'lucide-react'
-import { iconUrl } from '@/components/shared/icon-picker'
+import { iconUrl } from '@/lib/utils'
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params

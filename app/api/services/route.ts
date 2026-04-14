@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       port: body.port ? parseInt(body.port) : null,
       category: body.category || null,
       status: (body.status as Status) || 'UNKNOWN',
+      icon: body.icon || null,
     },
   })
 
