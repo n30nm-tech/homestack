@@ -23,6 +23,10 @@ interface ParsedService {
   networks: string[]
 }
 
+function normaliseKey(k: string): string {
+  return k.toLowerCase().replace(/[\s_-]+/g, ' ').trim()
+}
+
 function parseScriptOutput(raw: string): ParsedService {
   const lines = raw.split('\n')
   const result: ParsedService = {
@@ -31,64 +35,67 @@ function parseScriptOutput(raw: string): ParsedService {
     bindMounts: [], namedVolumes: [], envVarNames: [], networks: [],
   }
 
-  let section: string | null = null  // tracks current list section
+  let section: string | null = null
 
   for (const rawLine of lines) {
     const line = rawLine.trim()
+    if (!line) { section = null; continue }
 
-    // Top-level fields
-    const topField = line.match(/^-\s+(.+?):\s+(.+)$/)
-    if (topField) {
-      const [, key, val] = topField
-      switch (key.trim()) {
-        case 'App Name':       result.appName       = val.trim(); break
-        case 'Stack Folder':   result.stackFolder   = val.trim(); break
-        case 'Compose File':   result.composeFile   = val.trim(); break
-        case 'Image':          result.image         = val.trim(); break
-        case 'Container Name': result.containerName = val.trim(); break
-        case 'Running Status': result.runningStatus = val.trim(); break
+    // Skip markdown headings
+    if (line.startsWith('#')) continue
+
+    // Match "key: value" lines — with or without a leading "- "
+    // Handles:  "- App Name: foo"  AND  "App Name: foo"  AND  "Image: foo"
+    const fieldMatch = line.match(/^(?:-\s+)?(.+?):\s+(.+)$/)
+    if (fieldMatch && !rawLine.startsWith('  ')) {
+      const key = normaliseKey(fieldMatch[1])
+      const val = fieldMatch[2].trim()
+      switch (key) {
+        case 'app name':        result.appName       = val; break
+        case 'stack folder':    result.stackFolder   = val; break
+        case 'compose file':
+        case 'compose file path': result.composeFile = val; break
+        case 'image':           result.image         = val; break
+        case 'container name':  result.containerName = val; break
+        case 'running status':
+        case 'container status': result.runningStatus = val; break
       }
-      // A field with a value ends the previous list section
-      if (!rawLine.startsWith('  ')) section = null
+      section = null
       continue
     }
 
-    // Section headers (lines ending with just a colon, like "- Ports:")
-    const sectionHeader = line.match(/^-\s+(.+?):$/)
-    if (sectionHeader) {
-      section = sectionHeader[1].trim()
+    // Section headers — lines ending with just a colon (with or without leading "- ")
+    const sectionMatch = line.match(/^(?:-\s+)?(.+?):$/)
+    if (sectionMatch && !rawLine.startsWith('  ')) {
+      section = normaliseKey(sectionMatch[1])
       continue
     }
 
-    // List items under a section (indented with two spaces)
-    if (rawLine.startsWith('  ') && section) {
+    // Indented list items under a section
+    if (rawLine.match(/^\s+/) && section) {
       const item = line.replace(/^-\s+/, '').trim()
       if (!item || item.toLowerCase() === 'none') continue
       switch (section) {
-        case 'Ports':
-          // Take the host port from the first "host:container" mapping
+        case 'ports':
           if (result.port === null) {
             const portMatch = item.match(/^(\d+):/)
             if (portMatch) result.port = parseInt(portMatch[1], 10)
           }
           break
-        case 'Environment Variable Names':
+        case 'environment variable names':
           result.envVarNames.push(item)
           break
-        case 'Bind Mounts':
+        case 'bind mounts':
           result.bindMounts.push(item)
           break
-        case 'Named Volumes':
+        case 'named volumes':
           result.namedVolumes.push(item)
           break
-        case 'Networks':
-        case 'All Docker Networks':
+        case 'networks':
+        case 'all docker networks':
           result.networks.push(item)
           break
       }
-    } else if (!rawLine.startsWith('  ')) {
-      // Non-indented, non-field line resets section
-      if (!line.startsWith('-')) section = null
     }
   }
 
