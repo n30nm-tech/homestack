@@ -362,7 +362,7 @@ function GuidedServiceFlow({
   // Progress breadcrumb
   const allSteps: GuidedStep[] = runtime ? steps : []
   const breadcrumbLabels: Record<GuidedStep, string> = {
-    host: 'Proxmox Host', lxc: 'LXC', vm: 'VM',
+    runtime: 'Setup', host: 'Proxmox Host', lxc: 'LXC', vm: 'VM',
     dockerhost: 'Docker Host', 'device-slot': 'Device', details: 'Service',
   }
 
