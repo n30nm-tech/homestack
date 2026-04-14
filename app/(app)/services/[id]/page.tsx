@@ -6,6 +6,7 @@ import { TagList } from '@/components/shared/tag-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
 import { CodeBlock } from '@/components/shared/code-block'
 import { ServiceEditForm } from './service-edit-form'
+import { ServiceImportDialog } from './service-import-dialog'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star, Download } from 'lucide-react'
@@ -82,6 +83,7 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
               <Download className="w-4 h-4" />
               Export
             </a>
+            <ServiceImportDialog serviceId={service.id} />
             <ServiceEditForm service={service} />
           </div>
         </div>
