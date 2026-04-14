@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Star, Archive, Trash2 } from 'lucide-react'
+import { Edit, Star, Archive, Trash2, Upload } from 'lucide-react'
 import { IconPicker } from '@/components/shared/icon-picker'
 
 interface ServiceEditFormProps {
@@ -186,11 +186,49 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
 
             <TabsContent value="config" className="space-y-4 mt-4">
               <div className="space-y-1.5">
-                <Label>Docker Compose</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Docker Compose</Label>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                    <Upload className="w-3 h-3" />
+                    Upload file
+                    <input
+                      type="file"
+                      accept=".yml,.yaml"
+                      className="sr-only"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = ev => set('dockerCompose', ev.target?.result as string ?? '')
+                        reader.readAsText(file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                </div>
                 <Textarea className="h-40 font-mono text-xs" value={form.dockerCompose} onChange={e => set('dockerCompose', e.target.value)} placeholder="version: '3.8'&#10;services:&#10;  app:&#10;    image: …" />
               </div>
               <div className="space-y-1.5">
-                <Label>Environment Variables</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Environment Variables</Label>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                    <Upload className="w-3 h-3" />
+                    Upload .env
+                    <input
+                      type="file"
+                      accept=".env,.txt"
+                      className="sr-only"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = ev => set('envVars', ev.target?.result as string ?? '')
+                        reader.readAsText(file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                </div>
                 <Textarea className="h-28 font-mono text-xs" value={form.envVars} onChange={e => set('envVars', e.target.value)} placeholder="KEY=value&#10;ANOTHER=value" />
               </div>
               <div className="space-y-1.5">
