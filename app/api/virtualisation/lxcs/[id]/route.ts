@@ -36,6 +36,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       status: body.status ?? current.status,
       favourite: typeof body.favourite === 'boolean' ? body.favourite : current.favourite,
       archived: typeof body.archived === 'boolean' ? body.archived : current.archived,
+      hasDocker: typeof body.hasDocker === 'boolean' ? body.hasDocker : current.hasDocker,
+      dockerDataPath: 'dockerDataPath' in body ? (body.dockerDataPath || null) : current.dockerDataPath,
       hostId: body.hostId ?? current.hostId,
       notes:                'notes'                in body ? (body.notes                || null) : current.notes,
       setupNotes:           'setupNotes'           in body ? (body.setupNotes           || null) : current.setupNotes,

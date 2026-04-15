@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { VHOST_TYPE_LABELS, formatMB } from '@/lib/utils'
 import Link from 'next/link'
-import { Cpu, Server, Box, Container } from 'lucide-react'
+import { Cpu, Server, Box, Container, Container as DockerIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Virtualisation' }
@@ -130,8 +130,15 @@ export default async function VirtualisationPage() {
                   {lxcs.map(lxc => (
                     <tr key={lxc.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-5 py-3.5">
-                        <Link href={`/virtualisation/lxcs/${lxc.id}`} className="text-sm font-medium hover:text-primary transition-colors">{lxc.name}</Link>
-                        {lxc.ctid && <span className="ml-2 text-xs text-muted-foreground font-mono">CT{lxc.ctid}</span>}
+                        <div className="flex items-center gap-2">
+                          <Link href={`/virtualisation/lxcs/${lxc.id}`} className="text-sm font-medium hover:text-primary transition-colors">{lxc.name}</Link>
+                          {lxc.ctid && <span className="text-xs text-muted-foreground font-mono">CT{lxc.ctid}</span>}
+                          {lxc.hasDocker && (
+                            <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              <Container className="w-2.5 h-2.5" />Docker
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell"><StatusBadge status={lxc.status} /></td>
                       <td className="px-5 py-3.5 hidden lg:table-cell">

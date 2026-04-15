@@ -13,6 +13,7 @@ import {
   Boxes, Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
   Container, LayoutGrid, Check, Plus, ArrowRight,
 } from 'lucide-react'
+import { SuggestInput } from '@/components/shared/suggest-input'
 import { cn } from '@/lib/utils'
 
 type ItemType =
@@ -517,8 +518,8 @@ function GuidedServiceFlow({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Input placeholder="e.g. Media, Monitoring" value={service.category}
-                onChange={e => setService(s => ({ ...s, category: e.target.value }))} />
+              <SuggestInput model="Service" field="category" placeholder="e.g. Media, Monitoring" value={service.category}
+                onChange={v => setService(s => ({ ...s, category: v }))} />
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
@@ -750,14 +751,14 @@ function DeviceForm({ data, onChange }: { data: Record<string, string>; onChange
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Brand"><Input placeholder="e.g. Ubiquiti" value={data.brand ?? ''} onChange={e => onChange('brand', e.target.value)} /></Field>
-        <Field label="Model"><Input placeholder="e.g. USW-Pro-24" value={data.model ?? ''} onChange={e => onChange('model', e.target.value)} /></Field>
+        <Field label="Brand"><SuggestInput model="Device" field="brand" placeholder="e.g. Ubiquiti" value={data.brand ?? ''} onChange={v => onChange('brand', v)} /></Field>
+        <Field label="Model"><SuggestInput model="Device" field="model" placeholder="e.g. USW-Pro-24" value={data.model ?? ''} onChange={v => onChange('model', v)} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Management IP"><Input placeholder="192.168.1.1" value={data.managementIp ?? ''} onChange={e => onChange('managementIp', e.target.value)} /></Field>
         <Field label="Status"><StatusSelect value={data.status} onChange={v => onChange('status', v)} /></Field>
       </div>
-      <Field label="Location"><Input placeholder="e.g. Server Rack - U1" value={data.location ?? ''} onChange={e => onChange('location', e.target.value)} /></Field>
+      <Field label="Location"><SuggestInput model="Device" field="location" placeholder="e.g. Server Rack - U1" value={data.location ?? ''} onChange={v => onChange('location', v)} /></Field>
     </>
   )
 }
@@ -899,12 +900,12 @@ function BackupForm({ data, onChange }: { data: Record<string, string>; onChange
     <>
       <Field label="Job name *"><Input placeholder="e.g. Proxmox VM Backups" value={data.name ?? ''} onChange={e => onChange('name', e.target.value)} /></Field>
       <Field label="What does it back up?"><Input placeholder="e.g. All VMs on Proxmox" value={data.description ?? ''} onChange={e => onChange('description', e.target.value)} /></Field>
-      <Field label="Destination"><Input placeholder="e.g. NAS - /tank/backups" value={data.destination ?? ''} onChange={e => onChange('destination', e.target.value)} /></Field>
+      <Field label="Destination"><SuggestInput model="BackupJob" field="destination" placeholder="e.g. NAS - /tank/backups" value={data.destination ?? ''} onChange={v => onChange('destination', v)} /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Schedule"><Input placeholder="e.g. Daily at 03:00" value={data.schedule ?? ''} onChange={e => onChange('schedule', e.target.value)} /></Field>
-        <Field label="Retention"><Input placeholder="e.g. 7 daily, 4 weekly" value={data.retention ?? ''} onChange={e => onChange('retention', e.target.value)} /></Field>
+        <Field label="Schedule"><SuggestInput model="BackupJob" field="schedule" placeholder="e.g. Daily at 03:00" value={data.schedule ?? ''} onChange={v => onChange('schedule', v)} /></Field>
+        <Field label="Retention"><SuggestInput model="BackupJob" field="retention" placeholder="e.g. 7 daily, 4 weekly" value={data.retention ?? ''} onChange={v => onChange('retention', v)} /></Field>
       </div>
-      <Field label="Tool"><Input placeholder="e.g. Proxmox Backup Server, restic" value={data.tool ?? ''} onChange={e => onChange('tool', e.target.value)} /></Field>
+      <Field label="Tool"><SuggestInput model="BackupJob" field="tool" placeholder="e.g. Proxmox Backup Server, restic" value={data.tool ?? ''} onChange={v => onChange('tool', v)} /></Field>
     </>
   )
 }

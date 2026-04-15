@@ -25,7 +25,7 @@ export default async function DocDetailPage(props: { params: Promise<{ id: strin
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={page.title} />
+      <Header title={page.title} backHref="/docs" />
 
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">

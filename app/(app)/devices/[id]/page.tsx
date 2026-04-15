@@ -32,7 +32,7 @@ export default async function DeviceDetailPage(props: { params: Promise<{ id: st
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={device.name} />
+      <Header title={device.name} backHref="/devices" />
 
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">

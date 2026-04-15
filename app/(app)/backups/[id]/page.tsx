@@ -36,7 +36,7 @@ export default async function BackupDetailPage(props: { params: Promise<{ id: st
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={job.name} />
+      <Header title={job.name} backHref="/backups" />
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">

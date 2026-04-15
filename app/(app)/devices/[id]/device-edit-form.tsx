@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Edit, Archive, Star, Trash2 } from 'lucide-react'
 import { DeviceType } from '@prisma/client'
+import { SuggestInput } from '@/components/shared/suggest-input'
 
 export function DeviceEditForm({ device }: { device: any }) {
   const router = useRouter()
@@ -93,8 +94,8 @@ export function DeviceEditForm({ device }: { device: any }) {
 
           <div className="grid grid-cols-2 gap-4 mt-2">
             <div className="col-span-2 space-y-1.5"><Label>Name</Label><Input value={form.name} onChange={e => set('name', e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Brand</Label><Input value={form.brand} onChange={e => set('brand', e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Model</Label><Input value={form.model} onChange={e => set('model', e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Brand</Label><SuggestInput model="Device" field="brand" value={form.brand} onChange={v => set('brand', v)} /></div>
+            <div className="space-y-1.5"><Label>Model</Label><SuggestInput model="Device" field="model" value={form.model} onChange={v => set('model', v)} /></div>
             <div className="space-y-1.5"><Label>Hostname</Label><Input value={form.hostname} onChange={e => set('hostname', e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Status</Label>
               <Select value={form.status} onValueChange={v => set('status', v)}>
@@ -113,9 +114,9 @@ export function DeviceEditForm({ device }: { device: any }) {
             <div className="space-y-1.5"><Label>Main IP</Label><Input value={form.mainIp} onChange={e => set('mainIp', e.target.value)} /></div>
             <div className="space-y-1.5"><Label>MAC Address</Label><Input value={form.macAddress} onChange={e => set('macAddress', e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Serial Number</Label><Input value={form.serialNumber} onChange={e => set('serialNumber', e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Location</Label><Input value={form.location} onChange={e => set('location', e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Rack / Room</Label><Input value={form.rackRoom} onChange={e => set('rackRoom', e.target.value)} /></div>
-            <div className="col-span-2 space-y-1.5"><Label>Role</Label><Input value={form.role} onChange={e => set('role', e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Location</Label><SuggestInput model="Device" field="location" value={form.location} onChange={v => set('location', v)} /></div>
+            <div className="space-y-1.5"><Label>Rack / Room</Label><SuggestInput model="Device" field="rackRoom" value={form.rackRoom} onChange={v => set('rackRoom', v)} /></div>
+            <div className="col-span-2 space-y-1.5"><Label>Role</Label><SuggestInput model="Device" field="role" value={form.role} onChange={v => set('role', v)} /></div>
             <div className="col-span-2 space-y-1.5"><Label>OS / Firmware</Label><Input value={form.os} onChange={e => set('os', e.target.value)} /></div>
             <div className="col-span-2 space-y-1.5"><Label>Ports</Label><Input value={form.ports} onChange={e => set('ports', e.target.value)} /></div>
             <div className="col-span-2 space-y-1.5"><Label>Notes</Label><Textarea className="h-20" value={form.notes} onChange={e => set('notes', e.target.value)} /></div>

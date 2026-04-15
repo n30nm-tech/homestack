@@ -8,7 +8,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Edit, Archive, Trash2 } from 'lucide-react'
+import { OsCombobox } from './os-combobox'
+import { SuggestInput } from './suggest-input'
+
+// Fields that use SuggestInput: [model, field]
+const SUGGEST_FIELDS: Record<string, [string, string]> = {
+  category:    ['Service',    'category'],
+  tool:        ['BackupJob',  'tool'],
+  destination: ['BackupJob',  'destination'],
+  schedule:    ['BackupJob',  'schedule'],
+  retention:   ['BackupJob',  'retention'],
+  backupType:  ['BackupJob',  'backupType'],
+  purpose:     ['VirtualHost','purpose'],
+  dockerDataPath: ['LXC',     'dockerDataPath'],
+}
 
 // Fields that render as a full-width textarea
 const TEXT_AREA_FIELDS = new Set(['notes', 'setupNotes', 'troubleshootingNotes', 'extraInfo', 'content', 'description'])
@@ -18,6 +33,8 @@ const SELECT_FIELDS = new Set(['status'])
 const NUMBER_FIELDS = new Set(['cpu', 'disk', 'vlanId', 'targetPort', 'port'])
 // ram is special: stored in MB, displayed/edited in GB
 const RAM_FIELDS = new Set(['ram'])
+// Boolean toggle fields (stored as 'true'/'false' strings in form state)
+const BOOLEAN_FIELDS = new Set(['hasDocker'])
 
 const STATUS_OPTIONS = [
   { value: 'ACTIVE',             label: 'Active' },
@@ -42,6 +59,7 @@ const FIELD_LABELS: Record<string, string> = {
   recordName: 'Record Name', domain: 'Domain',
   subnet: 'Subnet', gateway: 'Gateway', purpose: 'Purpose', vlanId: 'VLAN ID',
   targetIp: 'Target IP', targetPort: 'Target Port',
+  hasDocker: 'Runs Docker', dockerDataPath: 'Compose / Stack Root Path',
 }
 
 // Fields that sit side-by-side in a 2-column grid
@@ -49,7 +67,7 @@ const COMPACT_FIELDS = new Set([
   'name','hostname','ip','os','version','cpu','ram','disk','storage',
   'vmid','ctid','title','schedule','retention','destination','backupType',
   'tool','recordName','domain','subnet','gateway','purpose','vlanId',
-  'targetIp','targetPort','status',
+  'targetIp','targetPort','status','dockerDataPath',
 ])
 
 interface GenericEditButtonProps {
@@ -70,9 +88,10 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
     const initial: Record<string, string> = {}
     for (const f of fields) {
       if (RAM_FIELDS.has(f)) {
-        // Convert MB → GB for editing
         const mb = currentData[f] != null ? Number(currentData[f]) : 0
         initial[f] = mb ? String(mb / 1024) : ''
+      } else if (BOOLEAN_FIELDS.has(f)) {
+        initial[f] = currentData[f] ? 'true' : 'false'
       } else {
         initial[f] = currentData[f] != null ? String(currentData[f]) : ''
       }
@@ -86,12 +105,14 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
 
   async function save() {
     setSaving(true)
-    const payload: Record<string, string | number | null> = {}
+    const payload: Record<string, string | number | boolean | null> = {}
     for (const [k, v] of Object.entries(form)) {
       if (RAM_FIELDS.has(k)) {
         payload[k] = v ? Math.round(parseFloat(v) * 1024) : null
       } else if (NUMBER_FIELDS.has(k)) {
         payload[k] = v ? parseInt(v) : null
+      } else if (BOOLEAN_FIELDS.has(k)) {
+        payload[k] = v === 'true'
       } else {
         payload[k] = v
       }
@@ -145,6 +166,45 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
         </div>
       )
     }
+    if (field === 'os') {
+      return (
+        <div key={field} className="space-y-1.5">
+          <Label>{fieldLabel}</Label>
+          <OsCombobox value={form[field]} onChange={v => set(field, v)} />
+        </div>
+      )
+    }
+    if (BOOLEAN_FIELDS.has(field)) {
+      const checked = form[field] === 'true'
+      return (
+        <div key={field} className="flex items-center justify-between rounded-lg border border-border px-4 py-3 col-span-2">
+          <div>
+            <p className="text-sm font-medium">{fieldLabel}</p>
+            {field === 'hasDocker' && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {checked ? 'Docker is running on this container — see the Docker section on the detail page.' : 'Enable to track Docker stacks and containers on this LXC.'}
+              </p>
+            )}
+          </div>
+          <Switch checked={checked} onCheckedChange={v => set(field, v ? 'true' : 'false')} />
+        </div>
+      )
+    }
+    if (SUGGEST_FIELDS[field]) {
+      const [suggestModel, suggestFieldName] = SUGGEST_FIELDS[field]
+      return (
+        <div key={field} className="space-y-1.5">
+          <Label>{fieldLabel}</Label>
+          <SuggestInput
+            model={suggestModel}
+            field={suggestFieldName}
+            value={form[field]}
+            onChange={v => set(field, v)}
+            className={field === 'dockerDataPath' ? 'font-mono text-xs' : undefined}
+          />
+        </div>
+      )
+    }
     if (TEXT_AREA_FIELDS.has(field)) {
       return (
         <div key={field} className="space-y-1.5">
@@ -159,7 +219,8 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
     }
     const isMono = field === 'hostname' || field === 'ip' || field === 'os' ||
       field === 'vmid' || field === 'ctid' || field === 'subnet' ||
-      field === 'gateway' || field === 'targetIp' || field === 'recordName'
+      field === 'gateway' || field === 'targetIp' || field === 'recordName' ||
+      field === 'dockerDataPath'
     return (
       <div key={field} className="space-y-1.5">
         <Label>{fieldLabel}</Label>

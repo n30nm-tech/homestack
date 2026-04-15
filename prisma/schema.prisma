@@ -183,6 +183,8 @@ model LXC {
   status               Status       @default(UNKNOWN)
   archived             Boolean      @default(false)
   favourite            Boolean      @default(false)
+  hasDocker            Boolean      @default(false)
+  dockerDataPath       String?
   hostId               String
   host                 VirtualHost  @relation(fields: [hostId], references: [id])
   services             Service[]

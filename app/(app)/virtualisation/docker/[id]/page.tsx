@@ -38,7 +38,7 @@ export default async function DockerHostDetailPage(props: { params: Promise<{ id
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={dh.name} />
+      <Header title={dh.name} backHref="/virtualisation" />
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3"><StatusBadge status={dh.status} /></div>

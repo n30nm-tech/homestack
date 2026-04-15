@@ -1,16 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, ChevronLeft } from 'lucide-react'
 import { SearchModal } from './search-modal'
 import { CreateWizard } from '../wizard/create-wizard'
+import Link from 'next/link'
 
 interface HeaderProps {
   title: string
   description?: string
+  backHref?: string
 }
 
-export function Header({ title, description }: HeaderProps) {
+export function Header({ title, description, backHref }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
 
@@ -20,6 +22,16 @@ export function Header({ title, description }: HeaderProps) {
         className="h-[60px] flex items-center px-6 gap-4 shrink-0 sticky top-0 z-10 border-b border-border"
         style={{ background: 'hsl(222 24% 5% / 0.85)', backdropFilter: 'blur(12px)' }}
       >
+        {/* Back button */}
+        {backHref && (
+          <Link
+            href={backHref}
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors -ml-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Link>
+        )}
+
         {/* Title */}
         <div className="flex-1 min-w-0">
           <h1 className="text-[15px] font-semibold truncate text-foreground">{title}</h1>

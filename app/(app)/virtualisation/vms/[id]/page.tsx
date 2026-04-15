@@ -31,7 +31,7 @@ export default async function VMDetailPage(props: { params: Promise<{ id: string
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={vm.name} />
+      <Header title={vm.name} backHref="/virtualisation" />
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3"><StatusBadge status={vm.status} /></div>

@@ -42,7 +42,7 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title={service.name} />
+      <Header title={service.name} backHref="/services" />
 
       <div className="page-container animate-fade-in space-y-6">
         {/* Top bar */}
