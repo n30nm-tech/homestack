@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { STATUS_LABELS, DEVICE_TYPE_LABELS, VHOST_TYPE_LABELS, formatDate, formatDateTime } from '@/lib/utils'
+import { STATUS_LABELS, DEVICE_TYPE_LABELS, VHOST_TYPE_LABELS, formatDate, formatDateTime, formatMB } from '@/lib/utils'
 
 // ─── Markdown generators ──────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (v.ip) lines.push(md('IP', v.ip))
     if (v.os) lines.push(md('OS', v.os))
     if (v.cpu) lines.push(md('vCPUs', String(v.cpu)))
-    if (v.ram) lines.push(md('RAM', `${v.ram} MB`))
+    if (v.ram) lines.push(md('RAM', formatMB(v.ram)))
     if (v.notes) lines.push(mdSection('Notes', v.notes))
     lines.push('\n')
   }

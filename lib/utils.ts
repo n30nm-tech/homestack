@@ -74,8 +74,9 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatMB(mb: number): string {
-  if (mb < 1024) return `${mb} MB`
-  return `${(mb / 1024).toFixed(1)} GB`
+  const gb = mb / 1024
+  if (Number.isInteger(gb)) return `${gb} GB`
+  return `${gb.toFixed(1)} GB`
 }
 
 export function getHostingSummary(item: {
