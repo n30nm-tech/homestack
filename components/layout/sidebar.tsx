@@ -11,6 +11,7 @@ import {
   Network,
   HardDrive,
   FileText,
+  Activity,
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,7 @@ const navItems = [
   { href: '/virtualisation', label: 'Virtualisation', icon: Cpu             },
   { href: '/network',        label: 'Network',        icon: Network         },
   { href: '/backups',        label: 'Backups',        icon: HardDrive       },
+  { href: '/uptime',         label: 'Uptime',         icon: Activity        },
   { href: '/docs',           label: 'Docs',           icon: FileText        },
 ]
 

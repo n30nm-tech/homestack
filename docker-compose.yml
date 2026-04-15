@@ -30,6 +30,7 @@ services:
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homestack.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-homestack}
+      CRON_SECRET: ${CRON_SECRET:-}
     ports:
       - "${PORT:-3000}:3000"
     networks:
