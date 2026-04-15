@@ -34,7 +34,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       vmId: 'vmId' in body ? (body.vmId || null) : current.vmId,
       lxcId: 'lxcId' in body ? (body.lxcId || null) : current.lxcId,
       virtualHostId: 'virtualHostId' in body ? (body.virtualHostId || null) : current.virtualHostId,
-      notes: 'notes' in body ? (body.notes || null) : current.notes,
+      notes:                'notes'                in body ? (body.notes                || null) : current.notes,
+      setupNotes:           'setupNotes'           in body ? (body.setupNotes           || null) : current.setupNotes,
+      troubleshootingNotes: 'troubleshootingNotes' in body ? (body.troubleshootingNotes || null) : current.troubleshootingNotes,
+      extraInfo:            'extraInfo'            in body ? (body.extraInfo            || null) : current.extraInfo,
     },
   })
   const changes_dh = diffRecords(current as Record<string, unknown>, updated as Record<string, unknown>)

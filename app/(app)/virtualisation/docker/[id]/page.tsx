@@ -42,7 +42,7 @@ export default async function DockerHostDetailPage(props: { params: Promise<{ id
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3"><StatusBadge status={dh.status} /></div>
-          <GenericEditButton id={dh.id} apiPath="/api/virtualisation/docker" redirectPath="/virtualisation" label="Docker Host" currentData={dh as any} fields={['name','hostname','ip','status','notes']} />
+          <GenericEditButton id={dh.id} apiPath="/api/virtualisation/docker" redirectPath="/virtualisation" label="Docker Host" currentData={dh as any} fields={['name','hostname','ip','status','notes','setupNotes','troubleshootingNotes','extraInfo']} />
         </div>
 
         <div className="section-card space-y-5">

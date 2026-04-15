@@ -34,7 +34,7 @@ export default async function LXCDetailPage(props: { params: Promise<{ id: strin
       <div className="page-container animate-fade-in space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3"><StatusBadge status={lxc.status} /></div>
-          <GenericEditButton id={lxc.id} apiPath="/api/virtualisation/lxcs" redirectPath="/virtualisation" label="LXC" currentData={lxc as any} fields={['name','ctid','hostname','ip','os','cpu','ram','disk','status','notes']} />
+          <GenericEditButton id={lxc.id} apiPath="/api/virtualisation/lxcs" redirectPath="/virtualisation" label="LXC" currentData={lxc as any} fields={['name','ctid','hostname','ip','os','cpu','ram','disk','status','notes','setupNotes','troubleshootingNotes','extraInfo']} />
         </div>
 
         <div className="section-card space-y-5">

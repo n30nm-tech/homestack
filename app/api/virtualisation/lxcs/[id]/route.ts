@@ -37,7 +37,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       favourite: typeof body.favourite === 'boolean' ? body.favourite : current.favourite,
       archived: typeof body.archived === 'boolean' ? body.archived : current.archived,
       hostId: body.hostId ?? current.hostId,
-      notes: 'notes' in body ? (body.notes || null) : current.notes,
+      notes:                'notes'                in body ? (body.notes                || null) : current.notes,
+      setupNotes:           'setupNotes'           in body ? (body.setupNotes           || null) : current.setupNotes,
+      troubleshootingNotes: 'troubleshootingNotes' in body ? (body.troubleshootingNotes || null) : current.troubleshootingNotes,
+      extraInfo:            'extraInfo'            in body ? (body.extraInfo            || null) : current.extraInfo,
     },
   })
   const changes_lxc = diffRecords(current as Record<string, unknown>, updated as Record<string, unknown>)

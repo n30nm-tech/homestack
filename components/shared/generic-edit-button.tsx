@@ -10,52 +10,47 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Edit, Archive, Trash2 } from 'lucide-react'
 
-const TEXT_AREA_FIELDS = ['notes', 'setupNotes', 'troubleshootingNotes', 'extraInfo', 'content', 'description']
-const SELECT_FIELDS = ['status']
-const NUMBER_FIELDS = ['cpu', 'ram', 'disk', 'vlanId', 'targetPort', 'port']
+// Fields that render as a full-width textarea
+const TEXT_AREA_FIELDS = new Set(['notes', 'setupNotes', 'troubleshootingNotes', 'extraInfo', 'content', 'description'])
+// Fields that render as a status Select
+const SELECT_FIELDS = new Set(['status'])
+// Fields stored as integers (inputs use type=number)
+const NUMBER_FIELDS = new Set(['cpu', 'disk', 'vlanId', 'targetPort', 'port'])
+// ram is special: stored in MB, displayed/edited in GB
+const RAM_FIELDS = new Set(['ram'])
 
 const STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'OFFLINE', label: 'Offline' },
-  { value: 'WARNING', label: 'Warning' },
-  { value: 'BUILD_IN_PROGRESS', label: 'Build in Progress' },
-  { value: 'RETIRED', label: 'Retired' },
-  { value: 'UNKNOWN', label: 'Unknown' },
+  { value: 'ACTIVE',             label: 'Active' },
+  { value: 'OFFLINE',            label: 'Offline' },
+  { value: 'WARNING',            label: 'Warning' },
+  { value: 'BUILD_IN_PROGRESS',  label: 'Build in Progress' },
+  { value: 'RETIRED',            label: 'Retired' },
+  { value: 'UNKNOWN',            label: 'Unknown' },
 ]
 
 const FIELD_LABELS: Record<string, string> = {
-  name: 'Name',
-  hostname: 'Hostname',
-  ip: 'IP Address',
-  os: 'OS',
-  version: 'Version',
-  cpu: 'CPUs',
-  ram: 'RAM (MB)',
-  disk: 'Disk (GB)',
-  storage: 'Storage',
+  name: 'Name', hostname: 'Hostname', ip: 'IP Address',
+  os: 'OS / Firmware', version: 'Version',
+  cpu: 'CPUs', ram: 'RAM (GB)', disk: 'Disk (GB)', storage: 'Storage',
   status: 'Status',
-  notes: 'Notes',
-  setupNotes: 'Setup Notes',
-  troubleshootingNotes: 'Troubleshooting',
-  extraInfo: 'Extra Info',
-  content: 'Content',
-  description: 'Description',
-  vmid: 'VM ID',
-  ctid: 'CT ID',
-  title: 'Title',
-  schedule: 'Schedule',
-  retention: 'Retention',
-  destination: 'Destination',
-  tool: 'Tool',
-  recordName: 'Record Name',
-  domain: 'Domain',
-  subnet: 'Subnet',
-  gateway: 'Gateway',
-  purpose: 'Purpose',
-  vlanId: 'VLAN ID',
-  targetIp: 'Target IP',
-  targetPort: 'Target Port',
+  notes: 'Notes', setupNotes: 'Setup Notes',
+  troubleshootingNotes: 'Troubleshooting', extraInfo: 'Extra Info',
+  content: 'Content', description: 'Description',
+  vmid: 'VM ID', ctid: 'CT ID', title: 'Title',
+  schedule: 'Schedule', retention: 'Retention',
+  destination: 'Destination', backupType: 'Backup Type', tool: 'Tool',
+  recordName: 'Record Name', domain: 'Domain',
+  subnet: 'Subnet', gateway: 'Gateway', purpose: 'Purpose', vlanId: 'VLAN ID',
+  targetIp: 'Target IP', targetPort: 'Target Port',
 }
+
+// Fields that sit side-by-side in a 2-column grid
+const COMPACT_FIELDS = new Set([
+  'name','hostname','ip','os','version','cpu','ram','disk','storage',
+  'vmid','ctid','title','schedule','retention','destination','backupType',
+  'tool','recordName','domain','subnet','gateway','purpose','vlanId',
+  'targetIp','targetPort','status',
+])
 
 interface GenericEditButtonProps {
   id: string
@@ -74,7 +69,13 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
   const [form, setForm] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {}
     for (const f of fields) {
-      initial[f] = currentData[f] != null ? String(currentData[f]) : ''
+      if (RAM_FIELDS.has(f)) {
+        // Convert MB → GB for editing
+        const mb = currentData[f] != null ? Number(currentData[f]) : 0
+        initial[f] = mb ? String(mb / 1024) : ''
+      } else {
+        initial[f] = currentData[f] != null ? String(currentData[f]) : ''
+      }
     }
     return initial
   })
@@ -85,10 +86,20 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
 
   async function save() {
     setSaving(true)
+    const payload: Record<string, string | number | null> = {}
+    for (const [k, v] of Object.entries(form)) {
+      if (RAM_FIELDS.has(k)) {
+        payload[k] = v ? Math.round(parseFloat(v) * 1024) : null
+      } else if (NUMBER_FIELDS.has(k)) {
+        payload[k] = v ? parseInt(v) : null
+      } else {
+        payload[k] = v
+      }
+    }
     await fetch(`${apiPath}/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
     setSaving(false)
     setOpen(false)
@@ -116,6 +127,53 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
 
   const hasArchive = typeof (currentData as any).archived !== 'undefined'
 
+  const compactFields = fields.filter(f => COMPACT_FIELDS.has(f))
+  const wideFields    = fields.filter(f => !COMPACT_FIELDS.has(f))
+
+  function renderField(field: string) {
+    const fieldLabel = FIELD_LABELS[field] ?? field
+    if (SELECT_FIELDS.has(field)) {
+      return (
+        <div key={field} className="space-y-1.5">
+          <Label>{fieldLabel}</Label>
+          <Select value={form[field]} onValueChange={v => set(field, v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    }
+    if (TEXT_AREA_FIELDS.has(field)) {
+      return (
+        <div key={field} className="space-y-1.5">
+          <Label>{fieldLabel}</Label>
+          <Textarea
+            className={field === 'content' ? 'h-48 font-mono text-xs' : 'h-24'}
+            value={form[field]}
+            onChange={e => set(field, e.target.value)}
+          />
+        </div>
+      )
+    }
+    const isMono = field === 'hostname' || field === 'ip' || field === 'os' ||
+      field === 'vmid' || field === 'ctid' || field === 'subnet' ||
+      field === 'gateway' || field === 'targetIp' || field === 'recordName'
+    return (
+      <div key={field} className="space-y-1.5">
+        <Label>{fieldLabel}</Label>
+        <Input
+          type={(NUMBER_FIELDS.has(field) || RAM_FIELDS.has(field)) ? 'number' : 'text'}
+          step={RAM_FIELDS.has(field) ? '0.5' : undefined}
+          value={form[field]}
+          onChange={e => set(field, e.target.value)}
+          className={isMono ? 'font-mono text-xs' : undefined}
+        />
+      </div>
+    )
+  }
+
   return (
     <>
       <Button variant="outline" onClick={() => setOpen(true)}>
@@ -130,36 +188,14 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
-            {fields.map(field => {
-              const fieldLabel = FIELD_LABELS[field] ?? field
-              if (SELECT_FIELDS.includes(field)) {
-                return (
-                  <div key={field} className="space-y-1.5">
-                    <Label>{fieldLabel}</Label>
-                    <Select value={form[field]} onValueChange={v => set(field, v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )
-              }
-              if (TEXT_AREA_FIELDS.includes(field)) {
-                return (
-                  <div key={field} className="space-y-1.5">
-                    <Label>{fieldLabel}</Label>
-                    <Textarea className={field === 'content' ? 'h-48 font-mono text-xs' : 'h-20'} value={form[field]} onChange={e => set(field, e.target.value)} />
-                  </div>
-                )
-              }
-              return (
-                <div key={field} className="space-y-1.5">
-                  <Label>{fieldLabel}</Label>
-                  <Input type={NUMBER_FIELDS.includes(field) ? 'number' : 'text'} value={form[field]} onChange={e => set(field, e.target.value)} />
-                </div>
-              )
-            })}
+            {/* Compact 2-column grid for basic fields */}
+            {compactFields.length > 0 && (
+              <div className="grid grid-cols-2 gap-4">
+                {compactFields.map(f => renderField(f))}
+              </div>
+            )}
+            {/* Full-width for notes/textarea fields */}
+            {wideFields.map(f => renderField(f))}
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
