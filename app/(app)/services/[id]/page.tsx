@@ -93,7 +93,7 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
           <h2 className="text-sm font-semibold">Details</h2>
           <DetailGrid>
             {service.url && (
-              <DetailField label="URL" value={
+              <DetailField label="URL" copyValue={service.url} value={
                 <a href={ensureUrl(service.url)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm flex items-center gap-1">
                   {service.url} <ExternalLink className="w-3 h-3" />
                 </a>

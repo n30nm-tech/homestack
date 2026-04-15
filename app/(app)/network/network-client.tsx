@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Plus, Shield, Globe, Edit2, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { CopyButton } from '@/components/shared/copy-button'
 
 interface VLAN {
   id: string; name: string; vlanId: number; subnet: string | null; gateway: string | null
@@ -160,9 +161,22 @@ export function NetworkPageClient({ vlans: initialVlans, dnsRecords: initialDns,
               <tbody className="divide-y divide-border">
                 {initialDns.map(r => (
                   <tr key={r.id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-5 py-3.5 text-sm font-mono">{r.recordName}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground hidden md:table-cell">{r.domain ?? '—'}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground">{r.ip ?? '—'}</td>
+                    <td className="px-5 py-3.5 text-sm font-mono">
+                      <div className="flex items-center gap-1.5 group/cell">
+                        {r.recordName}
+                        <span className="opacity-0 group-hover/cell:opacity-100 transition-opacity"><CopyButton value={r.recordName} /></span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground hidden md:table-cell">
+                      {r.domain
+                        ? <div className="flex items-center gap-1.5 group/cell">{r.domain}<span className="opacity-0 group-hover/cell:opacity-100 transition-opacity"><CopyButton value={r.domain} /></span></div>
+                        : '—'}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground">
+                      {r.ip
+                        ? <div className="flex items-center gap-1.5 group/cell">{r.ip}<span className="opacity-0 group-hover/cell:opacity-100 transition-opacity"><CopyButton value={r.ip} /></span></div>
+                        : '—'}
+                    </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
                       {r.service ? <Link href={`/services/${r.service.id}`} className="text-sm hover:text-primary transition-colors">{r.service.name}</Link> : <span className="text-muted-foreground text-sm">—</span>}
                     </td>
@@ -202,13 +216,16 @@ export function NetworkPageClient({ vlans: initialVlans, dnsRecords: initialDns,
                 {initialProxies.map(rp => (
                   <tr key={rp.id} className="hover:bg-muted/30 transition-colors group">
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 group/cell">
                         {rp.ssl && <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                         <span className="text-sm font-mono">{rp.name}</span>
+                        <span className="opacity-0 group-hover/cell:opacity-100 transition-opacity"><CopyButton value={rp.name} /></span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground hidden lg:table-cell">
-                      {rp.targetIp ?? '—'}{rp.targetPort ? `:${rp.targetPort}` : ''}
+                      {rp.targetIp
+                        ? (() => { const t = `${rp.targetIp}${rp.targetPort ? `:${rp.targetPort}` : ''}`; return <div className="flex items-center gap-1.5 group/cell">{t}<span className="opacity-0 group-hover/cell:opacity-100 transition-opacity"><CopyButton value={t} /></span></div> })()
+                        : '—'}
                     </td>
                     <td className="px-5 py-3.5 hidden md:table-cell">
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${rp.ssl ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-muted-foreground bg-muted/40 border-border'}`}>
