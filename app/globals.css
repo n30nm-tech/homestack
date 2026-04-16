@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Large text mode — bumps the root font size so all rem-based sizes scale up */
+html.large-text {
+  font-size: 112.5%; /* 18px base instead of 16px */
+}
+
 @layer base {
   :root {
     /* ── Surfaces — layered dark blue-tinted blacks ── */

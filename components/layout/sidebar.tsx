@@ -13,8 +13,10 @@ import {
   FileText,
   Activity,
   LogOut,
+  ALargeSmall,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFontSize } from '@/components/providers/font-size-provider'
 
 const navItems = [
   { href: '/dashboard',      label: 'Dashboard',     icon: LayoutDashboard },
@@ -29,6 +31,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { fontSize, toggle } = useFontSize()
 
   return (
     <aside
@@ -98,7 +101,18 @@ export function Sidebar() {
       </nav>
 
       {/* ── Bottom ── */}
-      <div className="px-2.5 py-4 border-t border-border shrink-0">
+      <div className="px-2.5 py-4 border-t border-border shrink-0 space-y-0.5">
+        <button
+          onClick={toggle}
+          className="relative flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm font-medium
+                     text-muted-foreground transition-all duration-150 hover:text-foreground"
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}
+          title={fontSize === 'large' ? 'Switch to normal text' : 'Switch to large text'}
+        >
+          <ALargeSmall className="w-4 h-4 shrink-0" />
+          <span>{fontSize === 'large' ? 'Normal text' : 'Large text'}</span>
+        </button>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="relative flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm font-medium

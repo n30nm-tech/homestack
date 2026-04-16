@@ -63,14 +63,19 @@ export async function checkDevice(ip: string): Promise<CheckResult> {
   return { online: false, responseMs: Date.now() - start }
 }
 
-// Decide what kind of check to run for a service
+// Decide what kind of check to run for a service.
+// Prefer IP-based checks — they are more reliable on LANs where
+// a hostname may not resolve from the server running HomeStack.
 export async function checkService(service: {
   url: string | null
   ip: string | null
   port: number | null
 }): Promise<CheckResult> {
-  if (service.url) return checkHttp(service.url)
+  // IP + port → TCP check (fastest, most reliable on LAN)
   if (service.ip && service.port) return checkTcp(service.ip, service.port)
+  // IP only → try common admin ports
   if (service.ip) return checkDevice(service.ip)
+  // No IP at all → fall back to HTTP
+  if (service.url) return checkHttp(service.url)
   return { online: false, responseMs: 0 }
 }
