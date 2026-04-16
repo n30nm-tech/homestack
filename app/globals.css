@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Large text mode — bumps the root font size so all rem-based sizes scale up */
-html.large-text {
-  font-size: 112.5%; /* 18px base instead of 16px */
-}
+/* Font size and family are set inline on <html> by the AppearanceProvider */
 
 @layer base {
   :root {

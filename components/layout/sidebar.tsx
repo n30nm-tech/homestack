@@ -13,10 +13,9 @@ import {
   FileText,
   Activity,
   LogOut,
-  ALargeSmall,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useFontSize } from '@/components/providers/font-size-provider'
+import { AppearancePanel } from './appearance-panel'
 
 const navItems = [
   { href: '/dashboard',      label: 'Dashboard',     icon: LayoutDashboard },
@@ -31,7 +30,6 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { fontSize, toggle } = useFontSize()
 
   return (
     <aside
@@ -43,7 +41,6 @@ export function Sidebar() {
         <div className="relative flex items-center justify-center w-7 h-7 rounded-lg shrink-0"
              style={{ background: 'hsl(217 91% 60% / 0.12)', border: '1px solid hsl(217 91% 60% / 0.25)' }}>
           <Server className="w-3.5 h-3.5 text-primary" />
-          {/* glow */}
           <div className="absolute inset-0 rounded-lg blur-md opacity-50"
                style={{ background: 'hsl(217 91% 60% / 0.3)' }} />
         </div>
@@ -69,30 +66,17 @@ export function Sidebar() {
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
-                style={active
-                  ? { background: 'hsl(217 91% 60% / 0.1)' }
-                  : undefined
-                }
-                onMouseEnter={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'
-                }}
-                onMouseLeave={e => {
-                  if (!active) (e.currentTarget as HTMLElement).style.background = ''
-                }}
+                style={active ? { background: 'hsl(217 91% 60% / 0.1)' } : undefined}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '' }}
               >
-                {/* Active left-border indicator */}
                 {active && (
                   <span
                     className="absolute left-0 top-[18%] bottom-[18%] w-[2px] rounded-r-full"
                     style={{ background: 'hsl(217 91% 60%)' }}
                   />
                 )}
-                <Icon
-                  className={cn(
-                    'w-4 h-4 shrink-0 transition-colors',
-                    active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                  )}
-                />
+                <Icon className={cn('w-4 h-4 shrink-0 transition-colors', active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
                 <span className="truncate">{label}</span>
               </Link>
             )
@@ -102,17 +86,7 @@ export function Sidebar() {
 
       {/* ── Bottom ── */}
       <div className="px-2.5 py-4 border-t border-border shrink-0 space-y-0.5">
-        <button
-          onClick={toggle}
-          className="relative flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm font-medium
-                     text-muted-foreground transition-all duration-150 hover:text-foreground"
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}
-          title={fontSize === 'large' ? 'Switch to normal text' : 'Switch to large text'}
-        >
-          <ALargeSmall className="w-4 h-4 shrink-0" />
-          <span>{fontSize === 'large' ? 'Normal text' : 'Large text'}</span>
-        </button>
+        <AppearancePanel />
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="relative flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm font-medium
