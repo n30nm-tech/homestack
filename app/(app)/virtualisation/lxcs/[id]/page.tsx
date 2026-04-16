@@ -4,6 +4,8 @@ import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
 import { GenericEditButton } from '@/components/shared/generic-edit-button'
+import { ScanImportDialog } from '@/components/shared/scan-import-dialog'
+import { AssignServiceButton } from '@/components/shared/assign-service-button'
 import { formatMB } from '@/lib/utils'
 import Link from 'next/link'
 import { Container } from 'lucide-react'
@@ -54,14 +56,18 @@ export default async function LXCDetailPage(props: { params: Promise<{ id: strin
               </span>
             )}
           </div>
-          <GenericEditButton
-            id={lxc.id}
-            apiPath="/api/virtualisation/lxcs"
-            redirectPath="/virtualisation"
-            label="LXC"
-            currentData={lxc as any}
-            fields={['name','ctid','hostname','ip','os','cpu','ram','disk','status','hasDocker','dockerDataPath','notes','setupNotes','troubleshootingNotes','extraInfo']}
-          />
+          <div className="flex items-center gap-2">
+            <ScanImportDialog linkLxcId={lxc.id} />
+            <AssignServiceButton relationField="lxcId" relationId={lxc.id} label={lxc.name} />
+            <GenericEditButton
+              id={lxc.id}
+              apiPath="/api/virtualisation/lxcs"
+              redirectPath="/virtualisation"
+              label="LXC"
+              currentData={lxc as any}
+              fields={['name','ctid','hostname','ip','os','cpu','ram','disk','status','hasDocker','dockerDataPath','notes','setupNotes','troubleshootingNotes','extraInfo']}
+            />
+          </div>
         </div>
 
         <div className="section-card space-y-5">

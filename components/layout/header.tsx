@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Search, Plus, ChevronLeft } from 'lucide-react'
 import { SearchModal } from './search-modal'
 import { CreateWizard } from '../wizard/create-wizard'
@@ -10,9 +10,10 @@ interface HeaderProps {
   title: string
   description?: string
   backHref?: string
+  actions?: React.ReactNode
 }
 
-export function Header({ title, description, backHref }: HeaderProps) {
+export function Header({ title, description, backHref, actions }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
 
@@ -39,6 +40,9 @@ export function Header({ title, description, backHref }: HeaderProps) {
             <p className="text-[11px] text-muted-foreground truncate mt-px">{description}</p>
           )}
         </div>
+
+        {/* Extra actions (injected by page) */}
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
 
         {/* Search trigger */}
         <button

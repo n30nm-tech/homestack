@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { TagList } from '@/components/shared/tag-badge'
+import { ScanImportDialog } from '@/components/shared/scan-import-dialog'
 import { getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star } from 'lucide-react'
@@ -29,7 +30,11 @@ export default async function ServicesPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Services" description={`${services.length} services`} />
+      <Header
+        title="Services"
+        description={`${services.length} services`}
+        actions={<ScanImportDialog />}
+      />
 
       <div className="page-container animate-fade-in">
         {services.length === 0 ? (
