@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Star, Archive, Trash2, Upload } from 'lucide-react'
+import { Edit, Star, Archive, Trash2, Upload, Sparkles } from 'lucide-react'
 import { IconPicker } from '@/components/shared/icon-picker'
+
+interface NamedItem { id: string; name: string }
 
 interface ServiceEditFormProps {
   service: {
@@ -38,7 +40,89 @@ interface ServiceEditFormProps {
     setupNotes: string | null
     troubleshootingNotes: string | null
     extraInfo: string | null
+    // hosting relationship IDs
+    dockerHostId: string | null
+    lxcId: string | null
+    vmId: string | null
+    virtualHostId: string | null
+    deviceId: string | null
   }
+}
+
+type HostingType = 'docker' | 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
+
+function detectHostingType(svc: ServiceEditFormProps['service']): HostingType {
+  if (svc.dockerHostId) return 'docker'
+  if (svc.lxcId) return 'lxc'
+  if (svc.vmId) return 'vm'
+  if (svc.virtualHostId) return 'virtualhost'
+  if (svc.deviceId) return 'device'
+  return 'none'
+}
+
+// Very simple docker-compose parser — no heavy YAML lib needed
+function parseCompose(yaml: string): {
+  image?: string
+  ports?: string[]
+  volumes?: string[]
+  envLines?: string[]
+} {
+  const lines = yaml.split('\n')
+  let inServices = false
+  let inFirstService = false
+  let currentSection = ''
+  const result: { image?: string; ports: string[]; volumes: string[]; envLines: string[] } = { ports: [], volumes: [], envLines: [] }
+
+  for (const raw of lines) {
+    const line = raw
+    const trimmed = line.trimStart()
+    const indent = line.length - trimmed.length
+
+    if (trimmed.startsWith('services:')) { inServices = true; continue }
+    if (!inServices) continue
+
+    // First service key (2-space indent, not a sub-key)
+    if (indent === 2 && !trimmed.startsWith('-') && trimmed.endsWith(':')) {
+      inFirstService = true
+      currentSection = ''
+      continue
+    }
+    if (!inFirstService) continue
+
+    // Top-level key inside first service (4-space indent)
+    if (indent === 4 && !trimmed.startsWith('-')) {
+      if (trimmed.startsWith('image:')) {
+        result.image = trimmed.replace('image:', '').trim().replace(/['"]/g, '')
+      } else if (trimmed.startsWith('ports:')) {
+        currentSection = 'ports'
+      } else if (trimmed.startsWith('volumes:')) {
+        currentSection = 'volumes'
+      } else if (trimmed.startsWith('environment:')) {
+        currentSection = 'environment'
+      } else {
+        currentSection = ''
+      }
+      continue
+    }
+
+    // List items under current section (6-space indent or - prefixed)
+    if (inFirstService && trimmed.startsWith('-')) {
+      const val = trimmed.replace(/^-\s*/, '').replace(/['"]/g, '').trim()
+      if (currentSection === 'ports') result.ports.push(val)
+      if (currentSection === 'volumes') result.volumes.push(val)
+      if (currentSection === 'environment') result.envLines.push(val)
+    }
+
+    // key: value env vars (indent === 6)
+    if (inFirstService && currentSection === 'environment' && indent >= 6 && !trimmed.startsWith('-')) {
+      result.envLines.push(trimmed)
+    }
+
+    // Next top-level key — stop parsing first service
+    if (indent === 2 && !trimmed.startsWith('-') && trimmed.endsWith(':') && inFirstService) break
+  }
+
+  return result
 }
 
 export function ServiceEditForm({ service }: ServiceEditFormProps) {
@@ -47,6 +131,22 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [icon, setIcon] = useState<string | null>(service.icon)
+
+  // Hosting state
+  const [hostingType, setHostingType] = useState<HostingType>(detectHostingType(service))
+  const [dockerHostId, setDockerHostId] = useState(service.dockerHostId ?? '')
+  const [lxcId, setLxcId] = useState(service.lxcId ?? '')
+  const [vmId, setVmId] = useState(service.vmId ?? '')
+  const [virtualHostId, setVirtualHostId] = useState(service.virtualHostId ?? '')
+  const [deviceId, setDeviceId] = useState(service.deviceId ?? '')
+
+  // Available options for dropdowns
+  const [dockerHosts, setDockerHosts] = useState<NamedItem[]>([])
+  const [lxcs, setLxcs] = useState<NamedItem[]>([])
+  const [vms, setVms] = useState<NamedItem[]>([])
+  const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
+  const [devices, setDevices] = useState<NamedItem[]>([])
+
   const [form, setForm] = useState({
     name: service.name,
     url: service.url ?? '',
@@ -71,8 +171,51 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
     extraInfo: service.extraInfo ?? '',
   })
 
+  const [composeParsed, setComposeParsed] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    Promise.all([
+      fetch('/api/virtualisation/docker').then(r => r.json()),
+      fetch('/api/virtualisation/lxcs').then(r => r.json()),
+      fetch('/api/virtualisation/vms').then(r => r.json()),
+      fetch('/api/virtualisation/hosts').then(r => r.json()),
+      fetch('/api/devices').then(r => r.json()),
+    ]).then(([dh, lx, vm, vh, dv]) => {
+      setDockerHosts(dh)
+      setLxcs(lx)
+      setVms(vm)
+      setVirtualHosts(vh)
+      setDevices(dv)
+    }).catch(() => {})
+  }, [open])
+
   function set(key: string, value: string | boolean) {
     setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  function applyParsedCompose() {
+    const parsed = parseCompose(form.dockerCompose)
+    if (parsed.image && !form.containerImage) set('containerImage', parsed.image)
+    if (parsed.volumes.length > 0 && !form.bindMounts) set('bindMounts', parsed.volumes.join('\n'))
+    if (parsed.envLines.length > 0 && !form.envVars) set('envVars', parsed.envLines.join('\n'))
+    // Extract first host port from first port mapping e.g. "8080:80"
+    if (parsed.ports.length > 0 && !form.port) {
+      const hostPort = parsed.ports[0].split(':')[0].replace(/[^0-9]/g, '')
+      if (hostPort) set('port', hostPort)
+    }
+    setComposeParsed(true)
+  }
+
+  function buildHostingBody() {
+    // Only send the active relationship, null out others
+    return {
+      dockerHostId:  hostingType === 'docker'      ? (dockerHostId  || null) : null,
+      lxcId:         hostingType === 'lxc'         ? (lxcId         || null) : null,
+      vmId:          hostingType === 'vm'          ? (vmId          || null) : null,
+      virtualHostId: hostingType === 'virtualhost' ? (virtualHostId || null) : null,
+      deviceId:      hostingType === 'device'      ? (deviceId      || null) : null,
+    }
   }
 
   async function save() {
@@ -86,6 +229,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
           ...form,
           port: form.port ? parseInt(form.port) : null,
           icon,
+          ...buildHostingBody(),
         }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); setSaving(false); return }
@@ -120,6 +264,21 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
     router.refresh()
   }
 
+  function HostDropdown({ label, items, value, onChange }: { label: string; items: NamedItem[]; value: string; onChange: (v: string) => void }) {
+    if (items.length === 0) return <p className="text-xs text-muted-foreground">No {label.toLowerCase()} added yet.</p>
+    return (
+      <div className="space-y-1.5">
+        <Label>{label}</Label>
+        <Select value={value || ''} onValueChange={onChange}>
+          <SelectTrigger><SelectValue placeholder={`Select ${label}…`} /></SelectTrigger>
+          <SelectContent>
+            {items.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    )
+  }
+
   return (
     <>
       <Button variant="ghost" size="icon" onClick={toggleFavourite} title={service.favourite ? 'Remove from favourites' : 'Add to favourites'}>
@@ -141,10 +300,12 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
           <Tabs defaultValue="details">
             <TabsList className="w-full">
               <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
+              <TabsTrigger value="hosting" className="flex-1">Hosting</TabsTrigger>
               <TabsTrigger value="config" className="flex-1">Config</TabsTrigger>
               <TabsTrigger value="notes" className="flex-1">Notes</TabsTrigger>
             </TabsList>
 
+            {/* ── Details ── */}
             <TabsContent value="details" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
@@ -192,6 +353,44 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
               </div>
             </TabsContent>
 
+            {/* ── Hosting ── */}
+            <TabsContent value="hosting" className="space-y-4 mt-4">
+              <div className="space-y-1.5">
+                <Label>How is this service hosted?</Label>
+                <Select value={hostingType} onValueChange={v => setHostingType(v as HostingType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="docker">Docker host</SelectItem>
+                    <SelectItem value="lxc">LXC container</SelectItem>
+                    <SelectItem value="vm">Virtual machine</SelectItem>
+                    <SelectItem value="virtualhost">Virtualisation host (directly)</SelectItem>
+                    <SelectItem value="device">Physical device</SelectItem>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {hostingType === 'docker' && (
+                <HostDropdown label="Docker host" items={dockerHosts} value={dockerHostId} onChange={setDockerHostId} />
+              )}
+              {hostingType === 'lxc' && (
+                <HostDropdown label="LXC container" items={lxcs} value={lxcId} onChange={setLxcId} />
+              )}
+              {hostingType === 'vm' && (
+                <HostDropdown label="Virtual machine" items={vms} value={vmId} onChange={setVmId} />
+              )}
+              {hostingType === 'virtualhost' && (
+                <HostDropdown label="Virtualisation host" items={virtualHosts} value={virtualHostId} onChange={setVirtualHostId} />
+              )}
+              {hostingType === 'device' && (
+                <HostDropdown label="Physical device" items={devices} value={deviceId} onChange={setDeviceId} />
+              )}
+              {hostingType === 'none' && (
+                <p className="text-sm text-muted-foreground">Service will show as Unassigned.</p>
+              )}
+            </TabsContent>
+
+            {/* ── Config ── */}
             <TabsContent value="config" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
@@ -211,29 +410,56 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                   <Textarea className="h-20 font-mono text-xs" value={form.bindMounts} onChange={e => set('bindMounts', e.target.value)} placeholder="./data:/app/data&#10;./config:/etc/app/config" />
                 </div>
               </div>
+
+              {/* Docker Compose with auto-parse */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>Docker Compose</Label>
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                    <Upload className="w-3 h-3" />
-                    Upload file
-                    <input
-                      type="file"
-                      accept=".yml,.yaml"
-                      className="sr-only"
-                      onChange={e => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const reader = new FileReader()
-                        reader.onload = ev => set('dockerCompose', ev.target?.result as string ?? '')
-                        reader.readAsText(file)
-                        e.target.value = ''
-                      }}
-                    />
-                  </label>
+                  <div className="flex items-center gap-2">
+                    {form.dockerCompose && !composeParsed && (
+                      <button
+                        type="button"
+                        onClick={applyParsedCompose}
+                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+                        title="Extract image, ports, volumes and env vars from the compose file"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Auto-fill from compose
+                      </button>
+                    )}
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                      <Upload className="w-3 h-3" />
+                      Upload file
+                      <input
+                        type="file"
+                        accept=".yml,.yaml"
+                        className="sr-only"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const reader = new FileReader()
+                          reader.onload = ev => {
+                            set('dockerCompose', ev.target?.result as string ?? '')
+                            setComposeParsed(false)
+                          }
+                          reader.readAsText(file)
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
-                <Textarea className="h-40 font-mono text-xs" value={form.dockerCompose} onChange={e => set('dockerCompose', e.target.value)} placeholder="version: '3.8'&#10;services:&#10;  app:&#10;    image: …" />
+                <Textarea
+                  className="h-40 font-mono text-xs"
+                  value={form.dockerCompose}
+                  onChange={e => { set('dockerCompose', e.target.value); setComposeParsed(false) }}
+                  placeholder="version: '3.8'&#10;services:&#10;  app:&#10;    image: …"
+                />
+                {composeParsed && (
+                  <p className="text-xs text-emerald-400">Fields filled from compose — check Image, Port, Bind Mounts and Env Vars above.</p>
+                )}
               </div>
+
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>Environment Variables</Label>
@@ -257,6 +483,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                 </div>
                 <Textarea className="h-28 font-mono text-xs" value={form.envVars} onChange={e => set('envVars', e.target.value)} placeholder="KEY=value&#10;ANOTHER=value" />
               </div>
+
               <div className="space-y-1.5">
                 <Label>Setup Steps</Label>
                 <Textarea className="h-28" value={form.setupSteps} onChange={e => set('setupSteps', e.target.value)} placeholder="1. Step one&#10;2. Step two" />
@@ -271,6 +498,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
               </div>
             </TabsContent>
 
+            {/* ── Notes ── */}
             <TabsContent value="notes" className="space-y-4 mt-4">
               <div className="space-y-1.5">
                 <Label>Notes</Label>

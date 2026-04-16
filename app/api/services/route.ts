@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
       stackFolder:     body.stackFolder     || null,
       composeFilePath: body.composeFilePath || null,
       bindMounts:      body.bindMounts      || null,
+      dockerHostId:   body.dockerHostId   || null,
+      lxcId:          body.lxcId          || null,
+      vmId:           body.vmId           || null,
+      virtualHostId:  body.virtualHostId  || null,
+      deviceId:       body.deviceId       || null,
     },
   })
 

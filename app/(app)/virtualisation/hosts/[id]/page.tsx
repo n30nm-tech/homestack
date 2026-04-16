@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
+import { AssignServiceButton } from '@/components/shared/assign-service-button'
 import { VHOST_TYPE_LABELS, formatMB, formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 import { GenericEditButton } from '@/components/shared/generic-edit-button'
@@ -62,6 +63,33 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
             )}
           </DetailGrid>
         </div>
+
+        {/* Services directly on this host */}
+        {host.services.length > 0 && (
+          <div className="section-card space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Services ({host.services.length})</h2>
+              <AssignServiceButton relationField="virtualHostId" relationId={host.id} label={host.name} />
+            </div>
+            <div className="space-y-2">
+              {host.services.map((svc: any) => (
+                <div key={svc.id} className="flex items-center gap-3">
+                  <Link href={`/services/${svc.id}`} className="text-sm hover:text-primary transition-colors">{svc.name}</Link>
+                  <StatusBadge status={svc.status} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {host.services.length === 0 && (
+          <div className="section-card space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Services</h2>
+              <AssignServiceButton relationField="virtualHostId" relationId={host.id} label={host.name} />
+            </div>
+            <p className="text-sm text-muted-foreground">No services directly assigned to this host.</p>
+          </div>
+        )}
 
         {host.vms.length > 0 && (
           <div className="section-card space-y-4">

@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { TagList } from '@/components/shared/tag-badge'
 import { DetailField, DetailGrid } from '@/components/shared/detail-field'
 import { CodeBlock } from '@/components/shared/code-block'
+import { CollapsibleSection } from '@/components/shared/collapsible-section'
 import { ServiceEditForm } from './service-edit-form'
 import { ServiceImportDialog } from './service-import-dialog'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
@@ -84,7 +85,14 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
               Export
             </a>
             <ServiceImportDialog serviceId={service.id} />
-            <ServiceEditForm service={service} />
+            <ServiceEditForm service={{
+              ...service,
+              dockerHostId: service.dockerHostId,
+              lxcId: service.lxcId,
+              vmId: service.vmId,
+              virtualHostId: service.virtualHostId,
+              deviceId: service.deviceId,
+            }} />
           </div>
         </div>
 
@@ -178,71 +186,70 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
           </div>
         )}
 
-        {/* Config sections */}
+        {/* Config sections — collapsible */}
         {service.dockerCompose && (
-          <div className="space-y-2">
-            <h2 className="text-sm font-semibold">Docker Compose</h2>
+          <CollapsibleSection title="Docker Compose" defaultOpen={false}>
             <CodeBlock code={service.dockerCompose} language="yaml" filename="docker-compose.yml" />
-          </div>
+          </CollapsibleSection>
         )}
 
         {service.envVars && (
-          <div className="space-y-2">
-            <h2 className="text-sm font-semibold">Environment Variables</h2>
+          <CollapsibleSection title="Environment Variables" defaultOpen={false}>
             <CodeBlock code={service.envVars} language="env" filename=".env" />
-          </div>
+          </CollapsibleSection>
         )}
 
         {service.setupSteps && (
-          <div className="section-card space-y-3">
-            <h2 className="text-sm font-semibold">Setup Steps</h2>
-            <div className="prose prose-invert prose-sm max-w-none">
+          <CollapsibleSection title="Setup Steps">
+            <div className="section-card">
               <pre className="whitespace-pre-wrap text-sm text-muted-foreground font-sans">{service.setupSteps}</pre>
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {service.runCommands && (
-          <div className="space-y-2">
-            <h2 className="text-sm font-semibold">Commands</h2>
+          <CollapsibleSection title="Commands">
             <CodeBlock code={service.runCommands} language="bash" />
-          </div>
+          </CollapsibleSection>
         )}
 
         {service.reverseProxyConfig && (
-          <div className="space-y-2">
-            <h2 className="text-sm font-semibold">Reverse Proxy Config</h2>
+          <CollapsibleSection title="Reverse Proxy Config" defaultOpen={false}>
             <CodeBlock code={service.reverseProxyConfig} language="nginx" filename="nginx.conf" />
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Notes */}
         {service.notes && (
-          <div className="section-card space-y-3">
-            <h2 className="text-sm font-semibold">Notes</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.notes}</p>
-          </div>
+          <CollapsibleSection title="Notes">
+            <div className="section-card">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.notes}</p>
+            </div>
+          </CollapsibleSection>
         )}
 
         {service.setupNotes && (
-          <div className="section-card space-y-3">
-            <h2 className="text-sm font-semibold">Setup Notes</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.setupNotes}</p>
-          </div>
+          <CollapsibleSection title="Setup Notes">
+            <div className="section-card">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.setupNotes}</p>
+            </div>
+          </CollapsibleSection>
         )}
 
         {service.troubleshootingNotes && (
-          <div className="section-card space-y-3">
-            <h2 className="text-sm font-semibold">Troubleshooting</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.troubleshootingNotes}</p>
-          </div>
+          <CollapsibleSection title="Troubleshooting">
+            <div className="section-card">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.troubleshootingNotes}</p>
+            </div>
+          </CollapsibleSection>
         )}
 
         {service.extraInfo && (
-          <div className="section-card space-y-3">
-            <h2 className="text-sm font-semibold">Extra Info</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.extraInfo}</p>
-          </div>
+          <CollapsibleSection title="Extra Info">
+            <div className="section-card">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{service.extraInfo}</p>
+            </div>
+          </CollapsibleSection>
         )}
 
         {/* Audit log */}
