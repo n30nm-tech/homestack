@@ -80,12 +80,15 @@ if [ "$USE_DOCKER_DB" -eq 1 ]; then
   grep -q "DATABASE_URL" .env || echo 'DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"' >> .env
   sed -i.bak 's|DATABASE_URL=.*|DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"|' .env && rm -f .env.bak
 else
-  # Use local postgres — create DB if it doesn't exist
-  LOCAL_USER=$(whoami)
-  DB_URL="postgresql://${LOCAL_USER}@localhost:5432/homestack"
-  sed -i.bak "s|DATABASE_URL=.*|DATABASE_URL=\"${DB_URL}\"|" .env && rm -f .env.bak
-  psql postgres -c "CREATE DATABASE homestack;" 2>/dev/null || true
-  print "Using local PostgreSQL (user: $LOCAL_USER)"
+  # Use local postgres — don't overwrite DATABASE_URL if already set
+  if ! grep -q "^DATABASE_URL=" .env 2>/dev/null || grep -q 'DATABASE_URL=""' .env 2>/dev/null; then
+    echo 'DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"' >> .env
+  fi
+  sudo -u postgres psql -c "CREATE DATABASE homestack;" 2>/dev/null || true
+  sudo -u postgres psql -c "CREATE USER homestack WITH PASSWORD 'homestack';" 2>/dev/null || true
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE homestack TO homestack;" 2>/dev/null || true
+  sudo -u postgres psql -c "ALTER DATABASE homestack OWNER TO homestack;" 2>/dev/null || true
+  print "Using local PostgreSQL"
 fi
 
 # ── Generate Prisma client ─────────────────────────────────────────────────────
