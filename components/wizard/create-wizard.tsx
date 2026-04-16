@@ -158,17 +158,17 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
         {/* Type picker */}
         {step === 'type' && (
           <div className="mt-2 space-y-5">
-            <div className="rounded-xl border border-border bg-white/[0.03] px-4 py-3 space-y-1.5">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typical Proxmox + Docker setup</p>
+            <div className="rounded-xl border border-border bg-white/[0.03] px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typical setup — one LXC per service</p>
               <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                {['Device', 'Virtualisation Host', 'LXC', 'Docker Host', 'Service'].map((label, i) => (
+                {['Proxmox Host', 'LXC (Docker inside)', 'Service'].map((label, i) => (
                   <span key={label} className="flex items-center gap-1.5">
                     {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />}
                     <span className="px-2 py-0.5 rounded-md bg-muted font-medium text-foreground">{label}</span>
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Clicking <strong>Service</strong> launches a guided setup that builds the whole chain.</p>
+              <p className="text-xs text-muted-foreground">Each service lives in its own dedicated LXC. Docker is just the runtime — no extra "Docker Host" record needed.</p>
             </div>
             {ITEM_GROUPS.map(group => (
               <div key={group.label} className="space-y-2">
@@ -230,7 +230,9 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
 
 // ─── Guided Service Flow ──────────────────────────────────────────────────────
 
-type Runtime = 'docker-lxc' | 'docker-vm' | 'lxc-direct' | 'vm-direct' | 'device-direct' | 'skip'
+// 'lxc-docker' = dedicated LXC per service (Docker inside, no separate Docker Host record)
+// 'docker-lxc' = shared Docker LXC with a Docker Host record (multiple services, one LXC)
+type Runtime = 'lxc-docker' | 'docker-lxc' | 'docker-vm' | 'lxc-direct' | 'vm-direct' | 'device-direct' | 'skip'
 
 interface SlotValue {
   existingId: string | null
@@ -243,12 +245,13 @@ type GuidedStep = 'runtime' | 'host' | 'lxc' | 'vm' | 'dockerhost' | 'device-slo
 
 function stepsForRuntime(r: Runtime): GuidedStep[] {
   switch (r) {
-    case 'docker-lxc':    return ['host', 'lxc', 'dockerhost', 'details']
-    case 'docker-vm':     return ['host', 'vm',  'dockerhost', 'details']
-    case 'lxc-direct':   return ['host', 'lxc', 'details']
-    case 'vm-direct':    return ['host', 'vm',  'details']
+    case 'lxc-docker':   return ['host', 'lxc', 'details']   // dedicated LXC per service
+    case 'docker-lxc':   return ['host', 'lxc', 'dockerhost', 'details']
+    case 'docker-vm':    return ['host', 'vm',  'dockerhost', 'details']
+    case 'lxc-direct':  return ['host', 'lxc', 'details']
+    case 'vm-direct':   return ['host', 'vm',  'details']
     case 'device-direct':return ['device-slot', 'details']
-    case 'skip':          return ['details']
+    case 'skip':         return ['details']
   }
 }
 
@@ -315,7 +318,9 @@ function GuidedServiceFlow({
       // 2. Create LXC if new
       let lxcId = lxc.existingId
       if (!lxcId && lxc.newData?.name && hostId) {
-        const r = await fetch('/api/virtualisation/lxcs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...lxc.newData, hostId, status: 'ACTIVE' }) })
+        // Mark as Docker host when using dedicated-LXC-per-service flow
+        const hasDocker = runtime === 'lxc-docker'
+        const r = await fetch('/api/virtualisation/lxcs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...lxc.newData, hostId, status: 'ACTIVE', hasDocker }) })
         if (!r.ok) { setError('Failed to create LXC.'); setSaving(false); return }
         lxcId = (await r.json()).id
       }
@@ -363,7 +368,7 @@ function GuidedServiceFlow({
   // Progress breadcrumb
   const allSteps: GuidedStep[] = runtime ? steps : []
   const breadcrumbLabels: Record<GuidedStep, string> = {
-    runtime: 'Setup', host: 'Proxmox Host', lxc: 'LXC', vm: 'VM',
+    runtime: 'Setup', host: 'Proxmox', lxc: 'LXC', vm: 'VM',
     dockerhost: 'Docker Host', 'device-slot': 'Device', details: 'Service',
   }
 
@@ -394,12 +399,13 @@ function GuidedServiceFlow({
       {/* Step: runtime choice */}
       {currentStep === 'runtime' && (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">How does this service run?</p>
+          <p className="text-sm text-muted-foreground">Where does this service run?</p>
           {[
-            { value: 'docker-lxc'    as Runtime, label: 'Docker on an LXC', sub: 'Most common — Docker installed inside a Proxmox LXC container', highlight: true },
-            { value: 'docker-vm'     as Runtime, label: 'Docker on a VM',   sub: 'Docker installed inside a Proxmox virtual machine' },
-            { value: 'lxc-direct'   as Runtime, label: 'Directly in an LXC (no Docker)', sub: 'Service runs natively inside an LXC, not via Docker' },
-            { value: 'vm-direct'    as Runtime, label: 'Directly on a VM (no Docker)',   sub: 'Service runs natively on a VM' },
+            { value: 'lxc-docker'    as Runtime, label: 'Dedicated LXC with Docker', sub: 'One LXC per service — Docker runs inside the LXC. Pick or create the LXC, done.', highlight: true },
+            { value: 'lxc-direct'   as Runtime, label: 'Dedicated LXC, no Docker', sub: 'Service runs natively in its own LXC without Docker' },
+            { value: 'docker-lxc'   as Runtime, label: 'Shared Docker LXC', sub: 'Multiple services share one Docker LXC — creates a Docker Host record too' },
+            { value: 'docker-vm'    as Runtime, label: 'Docker on a VM',   sub: 'Docker installed inside a Proxmox virtual machine' },
+            { value: 'vm-direct'    as Runtime, label: 'Directly on a VM (no Docker)', sub: 'Service runs natively on a VM' },
             { value: 'device-direct' as Runtime, label: 'On a physical device', sub: 'Bare-metal, NAS, or any physical hardware' },
             { value: 'skip'          as Runtime, label: "I'll set hosting later", sub: 'Just add the service name and URL for now' },
           ].map(opt => (
@@ -669,10 +675,12 @@ function StackSummary({ runtime, host, lxc, vm, dockerHost, device }: {
   const name = (slot: SlotValue, fallback: string) =>
     slot.existingId ? fallback : (slot.newData?.name ?? fallback)
 
-  if (runtime.includes('docker-lxc') || runtime.includes('lxc')) parts.push(`LXC: ${name(lxc, 'LXC')}`)
-  if (runtime.includes('docker-vm')  || runtime.includes('vm'))  parts.push(`VM: ${name(vm, 'VM')}`)
-  if (runtime.includes('docker')) parts.push(`Docker: ${name(dockerHost, 'Docker Host')}`)
-  if (runtime === 'device-direct') parts.push(`Device: ${name(device, 'Device')}`)
+  if (runtime === 'lxc-docker') parts.push(`LXC (Docker): ${name(lxc, 'LXC')}`)
+  else if (runtime === 'docker-lxc') { parts.push(`LXC: ${name(lxc, 'LXC')}`); parts.push(`Docker: ${name(dockerHost, 'Docker Host')}`) }
+  else if (runtime === 'docker-vm')  { parts.push(`VM: ${name(vm, 'VM')}`); parts.push(`Docker: ${name(dockerHost, 'Docker Host')}`) }
+  else if (runtime === 'lxc-direct') parts.push(`LXC: ${name(lxc, 'LXC')}`)
+  else if (runtime === 'vm-direct')  parts.push(`VM: ${name(vm, 'VM')}`)
+  else if (runtime === 'device-direct') parts.push(`Device: ${name(device, 'Device')}`)
 
   if (parts.length === 0) return null
 
