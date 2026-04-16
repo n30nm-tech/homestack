@@ -42,106 +42,112 @@ interface ScanResult {
 
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
-function trim(s: string) { return s.trim() }
+function trimStr(s: string) { return s.trim() }
 function isNone(s: string) { return s.toLowerCase() === 'none' }
+// True if this raw line is an indented list item (2+ spaces then -)
+function isListItem(raw: string) { return /^\s{2,}-/.test(raw) }
+// True if an IP string looks like a real IP (not a docker/loopback one we want to skip)
+function looksLikeIp(s: string) { return /^\d{1,3}(\.\d{1,3}){3}$/.test(s.split('/')[0]) }
 
 function parseHostInfo(block: string): HostInfo {
-  const lines = block.split('\n')
   const info: HostInfo = { hostname: null, os: null, ips: [] }
   let inIps = false
-  for (const raw of lines) {
+
+  for (const raw of block.split('\n')) {
     const line = raw.trim()
-    if (!line || line.startsWith('#') || line.startsWith('=')) continue
-    const colonIdx = line.indexOf(':')
-    if (colonIdx === -1) {
-      if (inIps && line.startsWith('-')) {
-        const ip = line.replace(/^-\s*/, '').trim()
-        if (ip && !isNone(ip)) info.ips.push(ip)
-      }
+    if (!line) { inIps = false; continue }
+    if (line.startsWith('#') || line.startsWith('=')) { inIps = false; continue }
+
+    // Indented list item under IP Addresses
+    if (isListItem(raw) && inIps) {
+      const ip = line.replace(/^-\s*/, '').trim().split('/')[0]
+      if (ip && !isNone(ip) && looksLikeIp(ip)) info.ips.push(ip)
       continue
     }
+
+    // Non-indented list item or interface line — stop IP collection
+    if (!isListItem(raw) && inIps && !line.startsWith('-')) { inIps = false }
+
+    const colonIdx = line.indexOf(':')
+    if (colonIdx === -1) continue
     const key = line.slice(0, colonIdx).replace(/^-\s*/, '').toLowerCase().trim()
     const val = line.slice(colonIdx + 1).trim()
-    if (key === 'hostname') { info.hostname = val || null; inIps = false }
-    else if (key === 'os') { info.os = val || null; inIps = false }
+
+    if (key === 'hostname')                                  { info.hostname = val || null; inIps = false }
+    else if (key === 'os')                                   { info.os = val || null; inIps = false }
     else if (key === 'ip addresses' || key === 'ip address') { inIps = true }
-    else if (inIps && !val && !key.startsWith('-')) { inIps = false }
-    else if (inIps && val) { info.ips.push(val); inIps = false }
+    else if (inIps && val && looksLikeIp(val.split('/')[0])) { info.ips.push(val.split('/')[0]); inIps = false }
+    else if (inIps && val)                                   { inIps = false } // non-IP value, stop
   }
   return info
 }
 
 function parseDockerService(block: string): DockerServiceInfo {
-  const lines = block.split('\n')
+  const rawLines = block.split('\n')
   const svc: DockerServiceInfo = {
-    name: trim(lines[0] ?? ''),
-    containerName: null,
-    image: null,
-    runningStatus: null,
-    ports: [],
-    bindMounts: [],
-    namedVolumes: [],
-    envVarNames: [],
+    name: trimStr(rawLines[0] ?? ''),
+    containerName: null, image: null, runningStatus: null,
+    ports: [], bindMounts: [], namedVolumes: [], envVarNames: [],
   }
   let section = ''
-  for (const raw of lines.slice(1)) {
+
+  for (const raw of rawLines.slice(1)) {
     const line = raw.trim()
     if (!line) continue
-    const colonIdx = line.indexOf(':')
-    if (colonIdx === -1) {
-      if (section && line.startsWith('-')) {
-        const val = line.replace(/^-\s*/, '').trim()
-        if (val && !isNone(val)) addToSection(svc, section, val)
+
+    // Indented list items (  - value) — may contain colons (ports, mounts)
+    if (isListItem(raw)) {
+      const val = line.replace(/^-\s*/, '').trim()
+      if (val && !isNone(val)) {
+        switch (section) {
+          case 'ports':                    svc.ports.push(val); break
+          case 'bind mounts':             svc.bindMounts.push(val); break
+          case 'named volumes':           svc.namedVolumes.push(val); break
+          case 'environment variable names': svc.envVarNames.push(val); break
+        }
       }
       continue
     }
+
+    // Top-level field: "- Key: value" or "- Section:"
+    const colonIdx = line.indexOf(':')
+    if (colonIdx === -1) continue
     const key = line.slice(0, colonIdx).replace(/^-\s*/, '').toLowerCase().trim()
     const val = line.slice(colonIdx + 1).trim()
+
     if (val) {
-      section = ''
+      section = '' // inline value — not entering a list section
       switch (key) {
-        case 'container name': svc.containerName = val; break
-        case 'image': svc.image = val; break
-        case 'running status': svc.runningStatus = val; break
+        case 'container name':  svc.containerName = val; break
+        case 'image':           svc.image = val; break
+        case 'running status':  svc.runningStatus = val; break
       }
     } else {
-      // Section header
-      section = key
+      section = key // section header, list items follow
     }
   }
   return svc
 }
 
-function addToSection(svc: DockerServiceInfo, section: string, val: string) {
-  switch (section) {
-    case 'ports': svc.ports.push(val); break
-    case 'bind mounts': svc.bindMounts.push(val); break
-    case 'named volumes': svc.namedVolumes.push(val); break
-    case 'environment variable names': svc.envVarNames.push(val); break
-  }
-}
-
 function parseAppBlock(block: string): AppInfo {
-  // Split into subsections by ## headings
   const app: AppInfo = { appName: '', stackFolder: null, composeFile: null, services: [], envVarsFromDotenv: [] }
 
-  // App name from header line e.g. "APP: immich"
-  const headerLine = block.split('\n').find(l => l.startsWith('APP:') || l.includes('APP:'))
-  if (headerLine) app.appName = trim(headerLine.replace(/^.*APP:\s*/, ''))
+  // App name from first line "APP: immich" — preserve original case
+  const firstLine = block.split('\n')[0]
+  if (/^APP:/i.test(firstLine)) app.appName = trimStr(firstLine.replace(/^APP:\s*/i, ''))
 
-  // Split by ## sections
-  const sections = block.split(/^## /m)
-  for (const sec of sections) {
-    const firstLine = sec.split('\n')[0].toLowerCase().trim()
+  // Split by ## headings
+  for (const sec of block.split(/^## /m)) {
+    const secTitle = sec.split('\n')[0].toLowerCase().trim()
     const body = sec.split('\n').slice(1).join('\n')
 
-    if (firstLine === 'overview') {
+    if (secTitle === 'overview') {
       for (const raw of body.split('\n')) {
         const line = raw.trim()
-        const colonIdx = line.indexOf(':')
-        if (colonIdx === -1) continue
-        const key = line.slice(0, colonIdx).replace(/^-\s*/, '').toLowerCase().trim()
-        const val = line.slice(colonIdx + 1).trim()
+        const ci = line.indexOf(':')
+        if (ci === -1) continue
+        const key = line.slice(0, ci).replace(/^-\s*/, '').toLowerCase().trim()
+        const val = line.slice(ci + 1).trim()
         if (!val) continue
         if (key === 'app name' && !app.appName) app.appName = val
         if (key === 'stack folder') app.stackFolder = val
@@ -149,25 +155,22 @@ function parseAppBlock(block: string): AppInfo {
       }
     }
 
-    if (firstLine === 'docker services') {
-      // Split by ### subsections
-      const dockerSecs = body.split(/^### /m).filter(s => s.trim())
-      for (const ds of dockerSecs) {
+    if (secTitle === 'docker services') {
+      for (const ds of body.split(/^### /m).filter(s => s.trim())) {
         const svc = parseDockerService(ds)
         if (svc.name) app.services.push(svc)
       }
     }
 
-    if (firstLine === 'stack-level info') {
-      let inVarsSection = false
+    if (secTitle === 'stack-level info') {
+      let inVars = false
       for (const raw of body.split('\n')) {
         const line = raw.trim()
         if (!line) continue
-        if (line.toLowerCase().includes('variables from .env') || line.toLowerCase().includes('variables from dotenv')) {
-          inVarsSection = true; continue
-        }
-        if (line.startsWith('##')) inVarsSection = false
-        if (inVarsSection && line.startsWith('-')) {
+        const lc = line.toLowerCase()
+        if (lc.includes('variables from .env') || lc.includes('variables from dotenv')) { inVars = true; continue }
+        if (line.startsWith('##') || line.startsWith('- All')) { inVars = false }
+        if (inVars) {
           const val = line.replace(/^-\s*/, '').trim()
           if (val && !isNone(val)) app.envVarsFromDotenv.push(val)
         }
@@ -182,30 +185,28 @@ function parseScanOutput(raw: string): ScanResult {
   const result: ScanResult = { hostInfo: { hostname: null, os: null, ips: [] }, apps: [] }
   if (!raw.trim()) return result
 
-  // Split by separator lines
-  const separator = /={10,}/
-  const chunks = raw.split(separator).map(c => c.trim()).filter(Boolean)
+  const chunks = raw.split(/={10,}/).map(c => c.trim()).filter(Boolean)
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
-    const header = chunk.split('\n')[0].trim().toUpperCase()
+    const firstLine = chunk.split('\n')[0].trim()
+    const upperFirst = firstLine.toUpperCase()
 
-    if (header === 'HOST INFO') {
+    if (upperFirst === 'HOST INFO') {
+      result.hostInfo = parseHostInfo(chunks[i + 1] ?? '')
+    } else if (/^APP:/i.test(firstLine)) {
+      // Preserve original case for app name
+      const appName = firstLine.replace(/^APP:\s*/i, '').trim()
       const body = chunks[i + 1] ?? ''
-      result.hostInfo = parseHostInfo(body)
-    } else if (header.startsWith('APP:')) {
-      // The header has the app name, body is the next chunk
-      const body = chunks[i + 1] ?? ''
-      const app = parseAppBlock(`APP: ${header.replace('APP:', '').trim()}\n${body}`)
-      if (!app.appName) app.appName = header.replace('APP:', '').trim()
+      const app = parseAppBlock(`APP: ${appName}\n${body}`)
+      if (!app.appName) app.appName = appName
       result.apps.push(app)
     }
   }
 
-  // Fallback: if only one app block, header may be in same chunk
+  // Fallback: scan for inline APP: blocks
   if (result.apps.length === 0) {
-    const appMatches = raw.split(/^APP:\s*/m).filter(s => s.trim())
-    for (const block of appMatches.slice(1)) {
+    for (const block of raw.split(/^APP:\s*/m).slice(1)) {
       const app = parseAppBlock(`APP: ${block}`)
       if (app.appName || app.stackFolder) result.apps.push(app)
     }
