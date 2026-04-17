@@ -63,9 +63,9 @@ function detectHostingType(svc: ServiceEditFormProps['service']): HostingType {
 // Very simple docker-compose parser — no heavy YAML lib needed
 function parseCompose(yaml: string): {
   image?: string
-  ports?: string[]
-  volumes?: string[]
-  envLines?: string[]
+  ports: string[]
+  volumes: string[]
+  envLines: string[]
 } {
   const lines = yaml.split('\n')
   let inServices = false
