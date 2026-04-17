@@ -108,6 +108,10 @@ else
   print "Database has data — skipping seed (run 'npx tsx prisma/seed.ts' manually to reseed)"
 fi
 
+# ── Build (production) ───────────────────────────────────────────────────────
+print "Building app…"
+npm run build
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}✓ HomeStack is ready${NC}"
@@ -119,5 +123,5 @@ echo ""
 echo -e "  Press ${BOLD}Ctrl+C${NC} to stop"
 echo ""
 
-# ── Start dev server ──────────────────────────────────────────────────────────
-npm run dev
+# ── Start production server ───────────────────────────────────────────────────
+npm start

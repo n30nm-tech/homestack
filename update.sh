@@ -26,6 +26,9 @@ npx prisma generate 2>&1 | grep -v "tip\|Tip\|Prisma schema\|Environment" || tru
 print "Applying any schema changes…"
 npx prisma db push --skip-generate 2>&1 | grep -E "(sync|error|Error)" || true
 
+print "Rebuilding app…"
+npm run build
+
 echo ""
 echo -e "${GREEN}${BOLD}✓ HomeStack updated${NC}"
 echo ""
