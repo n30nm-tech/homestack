@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Shield, GitBranch, Wifi, Router, Server, HardDrive, Box, RefreshCw } from 'lucide-react'
+import { Shield, GitBranch, Wifi, Router, Server, HardDrive, Box, RefreshCw, ChevronDown, ChevronRight, Terminal } from 'lucide-react'
 import { iconUrl } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -284,19 +284,59 @@ export function UptimeClient({ initial }: { initial: StatusData }) {
         </div>
       )}
 
-      {/* Cron hint — only shows if never polled */}
-      {data.lastRun === null && (
-        <div className="section-card border-amber-500/20 bg-amber-500/5 space-y-2">
-          <p className="text-sm font-medium text-amber-400">No checks run yet</p>
+      <CronSetup lastRun={data.lastRun} />
+    </div>
+  )
+}
+
+function CronSetup({ lastRun }: { lastRun: string | null }) {
+  const [open, setOpen] = useState(lastRun === null)
+  const [port, setPort] = useState('3000')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') setPort(window.location.port || '3000')
+  }, [])
+
+  const base = `http://localhost:${port}`
+
+  return (
+    <div className={`section-card ${lastRun === null ? 'border-amber-500/20 bg-amber-500/5' : ''}`}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <Terminal className={`w-4 h-4 shrink-0 ${lastRun === null ? 'text-amber-400' : 'text-muted-foreground'}`} />
+        <span className={`text-sm font-medium flex-1 ${lastRun === null ? 'text-amber-400' : 'text-foreground'}`}>
+          {lastRun === null ? 'No checks run yet — cron setup required' : 'Cron job setup'}
+        </span>
+        {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-3">
           <p className="text-xs text-muted-foreground">
-            Trigger the first check manually, then set up a cron job on your LXC to poll every 2 minutes:
+            Uptime checks are triggered by a cron job on your LXC — the app does not poll automatically.
+            Run these commands on your LXC to set it up:
           </p>
-          <code className="block text-xs font-mono bg-muted rounded-lg px-4 py-3 text-foreground">
-            # Trigger once now{'\n'}
-            curl -X POST http://localhost:3000/api/uptime/run{'\n\n'}
-            # Add to crontab (crontab -e){'\n'}
-            */2 * * * * curl -s -X POST http://localhost:3000/api/uptime/run
-          </code>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">1. Trigger once now to test</p>
+            <pre className="text-xs font-mono bg-muted rounded-lg px-4 py-3 text-foreground overflow-x-auto">
+              {`curl -s -X POST ${base}/api/uptime/run`}
+            </pre>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">2. Add to crontab (runs every 2 minutes)</p>
+            <pre className="text-xs font-mono bg-muted rounded-lg px-4 py-3 text-foreground overflow-x-auto">
+              {`crontab -e\n\n# Add this line:\n*/2 * * * * curl -s -X POST ${base}/api/uptime/run > /dev/null 2>&1`}
+            </pre>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Port detected from your browser: <span className="font-mono text-foreground">{port}</span>.
+            If your app runs on a different port, update the commands above.
+          </p>
         </div>
       )}
     </div>
