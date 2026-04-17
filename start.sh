@@ -123,5 +123,8 @@ echo ""
 echo -e "  Press ${BOLD}Ctrl+C${NC} to stop"
 echo ""
 
+# ── Free port 3000 ───────────────────────────────────────────────────────────
+fuser -k 3000/tcp 2>/dev/null || true
+
 # ── Start production server ───────────────────────────────────────────────────
 npm start

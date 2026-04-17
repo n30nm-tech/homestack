@@ -10,7 +10,7 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import {
-  Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
+  Boxes, Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
   Container, LayoutGrid, Check, Plus, ArrowRight,
 } from 'lucide-react'
 import { SuggestInput } from '@/components/shared/suggest-input'
