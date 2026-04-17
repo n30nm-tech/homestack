@@ -49,10 +49,9 @@ interface ServiceEditFormProps {
   }
 }
 
-type HostingType = 'docker' | 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
+type HostingType = 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
 
 function detectHostingType(svc: ServiceEditFormProps['service']): HostingType {
-  if (svc.dockerHostId) return 'docker'
   if (svc.lxcId) return 'lxc'
   if (svc.vmId) return 'vm'
   if (svc.virtualHostId) return 'virtualhost'
@@ -134,14 +133,12 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
 
   // Hosting state
   const [hostingType, setHostingType] = useState<HostingType>(detectHostingType(service))
-  const [dockerHostId, setDockerHostId] = useState(service.dockerHostId ?? '')
   const [lxcId, setLxcId] = useState(service.lxcId ?? '')
   const [vmId, setVmId] = useState(service.vmId ?? '')
   const [virtualHostId, setVirtualHostId] = useState(service.virtualHostId ?? '')
   const [deviceId, setDeviceId] = useState(service.deviceId ?? '')
 
   // Available options for dropdowns
-  const [dockerHosts, setDockerHosts] = useState<NamedItem[]>([])
   const [lxcs, setLxcs] = useState<NamedItem[]>([])
   const [vms, setVms] = useState<NamedItem[]>([])
   const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
@@ -176,13 +173,11 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   useEffect(() => {
     if (!open) return
     Promise.all([
-      fetch('/api/virtualisation/docker').then(r => r.json()),
       fetch('/api/virtualisation/lxcs').then(r => r.json()),
       fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/virtualisation/hosts').then(r => r.json()),
       fetch('/api/devices').then(r => r.json()),
-    ]).then(([dh, lx, vm, vh, dv]) => {
-      setDockerHosts(dh)
+    ]).then(([lx, vm, vh, dv]) => {
       setLxcs(lx)
       setVms(vm)
       setVirtualHosts(vh)
@@ -208,9 +203,8 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   }
 
   function buildHostingBody() {
-    // Only send the active relationship, null out others
     return {
-      dockerHostId:  hostingType === 'docker'      ? (dockerHostId  || null) : null,
+      dockerHostId:  null,
       lxcId:         hostingType === 'lxc'         ? (lxcId         || null) : null,
       vmId:          hostingType === 'vm'          ? (vmId          || null) : null,
       virtualHostId: hostingType === 'virtualhost' ? (virtualHostId || null) : null,
@@ -360,8 +354,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                 <Select value={hostingType} onValueChange={v => setHostingType(v as HostingType)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="docker">Docker host</SelectItem>
-                    <SelectItem value="lxc">LXC container</SelectItem>
+                    <SelectItem value="lxc">LXC container (Docker inside)</SelectItem>
                     <SelectItem value="vm">Virtual machine</SelectItem>
                     <SelectItem value="virtualhost">Virtualisation host (directly)</SelectItem>
                     <SelectItem value="device">Physical device</SelectItem>
@@ -370,9 +363,6 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                 </Select>
               </div>
 
-              {hostingType === 'docker' && (
-                <HostDropdown label="Docker host" items={dockerHosts} value={dockerHostId} onChange={setDockerHostId} />
-              )}
               {hostingType === 'lxc' && (
                 <HostDropdown label="LXC container" items={lxcs} value={lxcId} onChange={setLxcId} />
               )}

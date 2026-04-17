@@ -10,14 +10,14 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import {
-  Boxes, Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
+  Server, Cpu, Network, HardDrive, FileText, ChevronRight, ChevronLeft,
   Container, LayoutGrid, Check, Plus, ArrowRight,
 } from 'lucide-react'
 import { SuggestInput } from '@/components/shared/suggest-input'
 import { cn } from '@/lib/utils'
 
 type ItemType =
-  | 'service' | 'device' | 'host' | 'vm' | 'lxc' | 'dockerhost'
+  | 'service' | 'device' | 'host' | 'vm' | 'lxc'
   | 'vlan' | 'dns' | 'proxy' | 'backup' | 'doc'
 
 const ITEM_GROUPS: {
@@ -30,8 +30,7 @@ const ITEM_GROUPS: {
       { type: 'device',     label: 'Device',               description: 'A physical machine (server, NAS, switch). The hardware everything runs on.', icon: Server },
       { type: 'host',       label: 'Virtualisation Host',  description: 'A hypervisor like Proxmox. Lives on a Device and runs VMs and LXCs.', icon: Cpu },
       { type: 'vm',         label: 'Virtual Machine',      description: 'A VM inside Proxmox or similar. Needs a Virtualisation Host.', icon: LayoutGrid },
-      { type: 'lxc',        label: 'LXC Container',        description: 'A lightweight Linux container in Proxmox. Needs a Virtualisation Host.', icon: Container },
-      { type: 'dockerhost', label: 'Docker Host',          description: 'Docker running somewhere — on an LXC, VM, or bare-metal. Links Docker to where it lives.', icon: Boxes },
+      { type: 'lxc',        label: 'LXC Container',        description: 'A lightweight Linux container in Proxmox. Tick "Runs Docker" on the LXC if it runs Docker inside.', icon: Container },
     ],
   },
   {
@@ -63,7 +62,6 @@ interface RelatedData {
   virtualHosts: NamedItem[]
   vms: NamedItem[]
   lxcs: NamedItem[]
-  dockerHosts: NamedItem[]
   devices: NamedItem[]
 }
 
@@ -76,7 +74,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [related, setRelated] = useState<RelatedData>({ virtualHosts: [], vms: [], lxcs: [], dockerHosts: [], devices: [] })
+  const [related, setRelated] = useState<RelatedData>({ virtualHosts: [], vms: [], lxcs: [], devices: [] })
 
   useEffect(() => {
     if (step !== 'form' && step !== 'guided') return
@@ -84,14 +82,12 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
       fetch('/api/virtualisation/hosts').then(r => r.json()),
       fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/virtualisation/lxcs').then(r => r.json()),
-      fetch('/api/virtualisation/docker').then(r => r.json()),
       fetch('/api/devices').then(r => r.json()),
-    ]).then(([virtualHosts, vms, lxcs, dockerHosts, devices]) => {
+    ]).then(([virtualHosts, vms, lxcs, devices]) => {
       setRelated({
         virtualHosts: virtualHosts.map((h: any) => ({ id: h.id, name: h.name, ip: h.ip })),
         vms: vms.map((v: any) => ({ id: v.id, name: v.name, ip: v.ip })),
         lxcs: lxcs.map((l: any) => ({ id: l.id, name: l.name, ip: l.ip })),
-        dockerHosts: dockerHosts.map((d: any) => ({ id: d.id, name: d.name, ip: d.ip })),
         devices: devices.map((d: any) => ({ id: d.id, name: d.name })),
       })
     }).catch(() => {})
@@ -118,7 +114,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
     const endpointMap: Record<ItemType, string> = {
       service: '/api/services', device: '/api/devices', host: '/api/virtualisation/hosts',
       vm: '/api/virtualisation/vms', lxc: '/api/virtualisation/lxcs',
-      dockerhost: '/api/virtualisation/docker', vlan: '/api/network/vlans',
+      vlan: '/api/network/vlans',
       dns: '/api/network/dns', proxy: '/api/network/proxy', backup: '/api/backups', doc: '/api/docs',
     }
     try {
@@ -131,7 +127,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
       const redirectMap: Record<ItemType, string> = {
         service: `/services/${data.id}`, device: `/devices/${data.id}`,
         host: `/virtualisation/hosts/${data.id}`, vm: `/virtualisation/vms/${data.id}`,
-        lxc: `/virtualisation/lxcs/${data.id}`, dockerhost: `/virtualisation/docker/${data.id}`,
+        lxc: `/virtualisation/lxcs/${data.id}`,
         vlan: `/network`, dns: `/network`, proxy: `/network`,
         backup: `/backups/${data.id}`, doc: `/docs/${data.id}`,
       }
@@ -210,7 +206,6 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
               {selectedType === 'host'       && <HostForm       data={formData} onChange={handleField} related={related} />}
               {selectedType === 'vm'         && <VMForm         data={formData} onChange={handleField} related={related} />}
               {selectedType === 'lxc'        && <LXCForm        data={formData} onChange={handleField} related={related} />}
-              {selectedType === 'dockerhost' && <DockerHostForm data={formData} onChange={handleField} related={related} />}
               {selectedType === 'vlan'       && <VLANForm       data={formData} onChange={handleField} />}
               {selectedType === 'dns'        && <DNSForm        data={formData} onChange={handleField} />}
               {selectedType === 'proxy'      && <ProxyForm      data={formData} onChange={handleField} />}
@@ -230,9 +225,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
 
 // ─── Guided Service Flow ──────────────────────────────────────────────────────
 
-// 'lxc-docker' = dedicated LXC per service (Docker inside, no separate Docker Host record)
-// 'docker-lxc' = shared Docker LXC with a Docker Host record (multiple services, one LXC)
-type Runtime = 'lxc-docker' | 'docker-lxc' | 'docker-vm' | 'lxc-direct' | 'vm-direct' | 'device-direct' | 'skip'
+type Runtime = 'lxc-docker' | 'lxc-direct' | 'vm-direct' | 'device-direct' | 'skip'
 
 interface SlotValue {
   existingId: string | null
@@ -241,15 +234,13 @@ interface SlotValue {
 
 const emptySlot = (): SlotValue => ({ existingId: null, newData: null })
 
-type GuidedStep = 'runtime' | 'host' | 'lxc' | 'vm' | 'dockerhost' | 'device-slot' | 'details'
+type GuidedStep = 'runtime' | 'host' | 'lxc' | 'vm' | 'device-slot' | 'details'
 
 function stepsForRuntime(r: Runtime): GuidedStep[] {
   switch (r) {
-    case 'lxc-docker':   return ['host', 'lxc', 'details']   // dedicated LXC per service
-    case 'docker-lxc':   return ['host', 'lxc', 'dockerhost', 'details']
-    case 'docker-vm':    return ['host', 'vm',  'dockerhost', 'details']
-    case 'lxc-direct':  return ['host', 'lxc', 'details']
-    case 'vm-direct':   return ['host', 'vm',  'details']
+    case 'lxc-docker':   return ['host', 'lxc', 'details']
+    case 'lxc-direct':   return ['host', 'lxc', 'details']
+    case 'vm-direct':    return ['host', 'vm',  'details']
     case 'device-direct':return ['device-slot', 'details']
     case 'skip':         return ['details']
   }
@@ -265,11 +256,10 @@ function GuidedServiceFlow({
   const [runtime, setRuntime]       = useState<Runtime | null>(null)
   const [steps, setSteps]           = useState<GuidedStep[]>([])
   const [stepIdx, setStepIdx]       = useState(0)
-  const [host, setHost]             = useState<SlotValue>(emptySlot())
-  const [lxc, setLxc]               = useState<SlotValue>(emptySlot())
-  const [vm, setVm]                 = useState<SlotValue>(emptySlot())
-  const [dockerHost, setDockerHost] = useState<SlotValue>(emptySlot())
-  const [device, setDevice]         = useState<SlotValue>(emptySlot())
+  const [host, setHost]     = useState<SlotValue>(emptySlot())
+  const [lxc, setLxc]       = useState<SlotValue>(emptySlot())
+  const [vm, setVm]         = useState<SlotValue>(emptySlot())
+  const [device, setDevice] = useState<SlotValue>(emptySlot())
   const [service, setService]       = useState({ name: '', url: '', status: 'ACTIVE', category: '' })
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
@@ -297,7 +287,6 @@ function GuidedServiceFlow({
       case 'host':        return !!(host.existingId || host.newData?.name)
       case 'lxc':         return !!(lxc.existingId || lxc.newData?.name)
       case 'vm':          return !!(vm.existingId || vm.newData?.name)
-      case 'dockerhost':  return !!(dockerHost.existingId || dockerHost.newData?.name)
       case 'device-slot': return !!(device.existingId || device.newData?.name)
       case 'details':     return !!service.name.trim()
       default: return false
@@ -333,18 +322,7 @@ function GuidedServiceFlow({
         vmId = (await r.json()).id
       }
 
-      // 4. Create Docker Host if new
-      let dockerHostId = dockerHost.existingId
-      if (!dockerHostId && dockerHost.newData?.name) {
-        const body: Record<string, string | null> = { ...dockerHost.newData, status: 'ACTIVE' }
-        if (lxcId) body.lxcId = lxcId
-        if (vmId)  body.vmId  = vmId
-        const r = await fetch('/api/virtualisation/docker', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        if (!r.ok) { setError('Failed to create Docker Host.'); setSaving(false); return }
-        dockerHostId = (await r.json()).id
-      }
-
-      // 5. Create device if new
+      // 4. Create device if new
       let deviceId = device.existingId
       if (!deviceId && device.newData?.name) {
         const r = await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...device.newData, status: 'ACTIVE', type: 'SERVER' }) })
@@ -352,12 +330,11 @@ function GuidedServiceFlow({
         deviceId = (await r.json()).id
       }
 
-      // 6. Create service
+      // 5. Create service
       const svcBody: Record<string, string | null> = { ...service }
-      if (dockerHostId) svcBody.dockerHostId = dockerHostId
-      else if (lxcId)   svcBody.lxcId        = lxcId
-      else if (vmId)    svcBody.vmId          = vmId
-      else if (deviceId) svcBody.deviceId     = deviceId
+      if (lxcId)        svcBody.lxcId    = lxcId
+      else if (vmId)    svcBody.vmId     = vmId
+      else if (deviceId) svcBody.deviceId = deviceId
 
       const r = await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(svcBody) })
       if (!r.ok) { setError('Failed to create service.'); setSaving(false); return }
@@ -369,7 +346,7 @@ function GuidedServiceFlow({
   const allSteps: GuidedStep[] = runtime ? steps : []
   const breadcrumbLabels: Record<GuidedStep, string> = {
     runtime: 'Setup', host: 'Proxmox', lxc: 'LXC', vm: 'VM',
-    dockerhost: 'Docker Host', 'device-slot': 'Device', details: 'Service',
+    'device-slot': 'Device', details: 'Service',
   }
 
   return (
@@ -401,13 +378,11 @@ function GuidedServiceFlow({
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">Where does this service run?</p>
           {[
-            { value: 'lxc-docker'    as Runtime, label: 'Dedicated LXC with Docker', sub: 'One LXC per service — Docker runs inside the LXC. Pick or create the LXC, done.', highlight: true },
-            { value: 'lxc-direct'   as Runtime, label: 'Dedicated LXC, no Docker', sub: 'Service runs natively in its own LXC without Docker' },
-            { value: 'docker-lxc'   as Runtime, label: 'Shared Docker LXC', sub: 'Multiple services share one Docker LXC — creates a Docker Host record too' },
-            { value: 'docker-vm'    as Runtime, label: 'Docker on a VM',   sub: 'Docker installed inside a Proxmox virtual machine' },
-            { value: 'vm-direct'    as Runtime, label: 'Directly on a VM (no Docker)', sub: 'Service runs natively on a VM' },
-            { value: 'device-direct' as Runtime, label: 'On a physical device', sub: 'Bare-metal, NAS, or any physical hardware' },
-            { value: 'skip'          as Runtime, label: "I'll set hosting later", sub: 'Just add the service name and URL for now' },
+            { value: 'lxc-docker'    as Runtime, label: 'LXC with Docker', sub: 'Each service has its own LXC — Docker runs inside it. This is the most common setup.', highlight: true },
+            { value: 'lxc-direct'    as Runtime, label: 'LXC, no Docker',  sub: 'Service runs natively inside an LXC without Docker' },
+            { value: 'vm-direct'     as Runtime, label: 'Virtual machine',  sub: 'Service runs directly on a VM (with or without Docker)' },
+            { value: 'device-direct' as Runtime, label: 'Physical device',  sub: 'Bare-metal server, NAS, or other physical hardware' },
+            { value: 'skip'          as Runtime, label: "Set hosting later", sub: 'Just add the service name and URL for now' },
           ].map(opt => (
             <button key={opt.value} onClick={() => chooseRuntime(opt.value)}
               className={cn(
@@ -476,21 +451,6 @@ function GuidedServiceFlow({
         />
       )}
 
-      {/* Step: Docker Host */}
-      {currentStep === 'dockerhost' && (
-        <SelectOrCreate
-          label="Docker Host"
-          hint="The Docker daemon running inside the LXC or VM. This is what actually runs your containers."
-          items={related.dockerHosts}
-          selected={dockerHost}
-          onSelect={setDockerHost}
-          newFields={[
-            { key: 'name', label: 'Docker host name', placeholder: 'e.g. Docker Main' },
-            { key: 'ip',   label: 'IP address',       placeholder: 'Same as LXC usually' },
-          ]}
-        />
-      )}
-
       {/* Step: Device */}
       {currentStep === 'device-slot' && (
         <SelectOrCreate
@@ -509,7 +469,7 @@ function GuidedServiceFlow({
       {currentStep === 'details' && (
         <div className="space-y-4">
           {runtime && runtime !== 'skip' && (
-            <StackSummary runtime={runtime} host={host} lxc={lxc} vm={vm} dockerHost={dockerHost} device={device} />
+            <StackSummary runtime={runtime} host={host} lxc={lxc} vm={vm} device={device} />
           )}
           <div className="space-y-1.5">
             <Label>Service name *</Label>
@@ -666,18 +626,15 @@ function SelectOrCreate({
 
 // ─── Stack summary shown on the final details step ────────────────────────────
 
-function StackSummary({ runtime, host, lxc, vm, dockerHost, device }: {
+function StackSummary({ runtime, host, lxc, vm, device }: {
   runtime: Runtime
-  host: SlotValue; lxc: SlotValue; vm: SlotValue
-  dockerHost: SlotValue; device: SlotValue
+  host: SlotValue; lxc: SlotValue; vm: SlotValue; device: SlotValue
 }) {
   const parts: string[] = []
   const name = (slot: SlotValue, fallback: string) =>
     slot.existingId ? fallback : (slot.newData?.name ?? fallback)
 
-  if (runtime === 'lxc-docker') parts.push(`LXC (Docker): ${name(lxc, 'LXC')}`)
-  else if (runtime === 'docker-lxc') { parts.push(`LXC: ${name(lxc, 'LXC')}`); parts.push(`Docker: ${name(dockerHost, 'Docker Host')}`) }
-  else if (runtime === 'docker-vm')  { parts.push(`VM: ${name(vm, 'VM')}`); parts.push(`Docker: ${name(dockerHost, 'Docker Host')}`) }
+  if (runtime === 'lxc-docker')    parts.push(`LXC (Docker): ${name(lxc, 'LXC')}`)
   else if (runtime === 'lxc-direct') parts.push(`LXC: ${name(lxc, 'LXC')}`)
   else if (runtime === 'vm-direct')  parts.push(`VM: ${name(vm, 'VM')}`)
   else if (runtime === 'device-direct') parts.push(`Device: ${name(device, 'Device')}`)
@@ -831,34 +788,6 @@ function LXCForm({ data, onChange, related }: { data: Record<string, string>; on
       <div className="grid grid-cols-2 gap-3">
         <Field label="IP address"><Input placeholder="192.168.10.20" value={data.ip ?? ''} onChange={e => onChange('ip', e.target.value)} /></Field>
         <Field label="OS"><Input placeholder="e.g. Debian 12" value={data.os ?? ''} onChange={e => onChange('os', e.target.value)} /></Field>
-      </div>
-    </>
-  )
-}
-
-function DockerHostForm({ data, onChange, related }: { data: Record<string, string>; onChange: (k: string, v: string) => void; related: RelatedData }) {
-  const runningOn = data._runningOn || ''
-  function setRunningOn(type: string) { onChange('_runningOn', type); onChange('vmId', ''); onChange('lxcId', ''); onChange('virtualHostId', '') }
-  return (
-    <>
-      <Field label="Name *"><Input placeholder="e.g. Docker Main" value={data.name ?? ''} onChange={e => onChange('name', e.target.value)} /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="IP address"><Input placeholder="192.168.10.10" value={data.ip ?? ''} onChange={e => onChange('ip', e.target.value)} /></Field>
-        <Field label="Status"><StatusSelect value={data.status} onChange={v => onChange('status', v)} /></Field>
-      </div>
-      <div className="border border-border rounded-xl p-4 space-y-3">
-        <p className="text-sm font-medium">Where is Docker running?</p>
-        <Select value={runningOn} onValueChange={setRunningOn}>
-          <SelectTrigger><SelectValue placeholder="Choose…" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="lxc">On an LXC container (most common)</SelectItem>
-            <SelectItem value="vm">On a VM</SelectItem>
-            <SelectItem value="host">Directly on a hypervisor</SelectItem>
-          </SelectContent>
-        </Select>
-        {runningOn === 'vm'   && <HostSelect label="Which VM?"   items={related.vms}          value={data.vmId ?? ''}          onChange={v => onChange('vmId', v)}          placeholder="Select VM…" />}
-        {runningOn === 'lxc'  && <HostSelect label="Which LXC?"  items={related.lxcs}         value={data.lxcId ?? ''}         onChange={v => onChange('lxcId', v)}         placeholder="Select LXC…" />}
-        {runningOn === 'host' && <HostSelect label="Which host?" items={related.virtualHosts} value={data.virtualHostId ?? ''} onChange={v => onChange('virtualHostId', v)} placeholder="Select host…" />}
       </div>
     </>
   )

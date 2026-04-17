@@ -3,13 +3,13 @@ import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { VHOST_TYPE_LABELS, formatMB } from '@/lib/utils'
 import Link from 'next/link'
-import { Cpu, Server, Box, Container, Container as DockerIcon } from 'lucide-react'
+import { Cpu, Server, Box, Container } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Virtualisation' }
 
 export default async function VirtualisationPage() {
-  const [hosts, vms, lxcs, dockerHosts] = await Promise.all([
+  const [hosts, vms, lxcs] = await Promise.all([
     prisma.virtualHost.findMany({
       where: { archived: false },
       include: {
@@ -21,12 +21,11 @@ export default async function VirtualisationPage() {
     }),
     prisma.vM.findMany({ where: { archived: false }, include: { host: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
     prisma.lXC.findMany({ where: { archived: false }, include: { host: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
-    prisma.dockerHost.findMany({ where: { archived: false }, include: { vm: { select: { id: true, name: true } }, lxc: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
   ])
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Virtualisation" description={`${hosts.length} hosts, ${vms.length} VMs, ${lxcs.length} LXCs, ${dockerHosts.length} Docker hosts`} />
+      <Header title="Virtualisation" description={`${hosts.length} hosts · ${vms.length} VMs · ${lxcs.length} LXCs`} />
 
       <div className="page-container animate-fade-in space-y-8">
         {/* Hosts */}
@@ -153,31 +152,6 @@ export default async function VirtualisationPage() {
           ) : <p className="text-sm text-muted-foreground">No LXCs yet.</p>}
         </section>
 
-        {/* Docker Hosts */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Container className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Docker Hosts</h2>
-            <span className="text-xs text-muted-foreground ml-1">{dockerHosts.length}</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {dockerHosts.map(dh => (
-              <Link key={dh.id} href={`/virtualisation/docker/${dh.id}`} className="section-card hover:border-border/80 transition-colors space-y-2 group">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-medium group-hover:text-primary transition-colors">{dh.name}</h3>
-                  <StatusBadge status={dh.status} className="shrink-0" />
-                </div>
-                {dh.ip && <p className="text-xs font-mono text-muted-foreground">{dh.ip}</p>}
-                {(dh.vm || dh.lxc) && (
-                  <p className="text-xs text-muted-foreground">
-                    Runs on: {dh.vm?.name ?? dh.lxc?.name}
-                  </p>
-                )}
-              </Link>
-            ))}
-            {dockerHosts.length === 0 && <p className="text-sm text-muted-foreground col-span-3">No Docker hosts yet.</p>}
-          </div>
-        </section>
       </div>
     </div>
   )
