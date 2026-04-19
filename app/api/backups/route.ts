@@ -13,8 +13,6 @@ export async function GET(req: NextRequest) {
       service: { select: { id: true, name: true } },
       device: { select: { id: true, name: true } },
       vm: { select: { id: true, name: true } },
-      lxc: { select: { id: true, name: true } },
-      dockerHost: { select: { id: true, name: true } },
       virtualHost: { select: { id: true, name: true } },
     },
     orderBy: { name: 'asc' },
@@ -40,8 +38,6 @@ export async function POST(req: NextRequest) {
       serviceId: body.serviceId || null,
       deviceId: body.deviceId || null,
       vmId: body.vmId || null,
-      lxcId: body.lxcId || null,
-      dockerHostId: body.dockerHostId || null,
       virtualHostId: body.virtualHostId || null,
     },
   })

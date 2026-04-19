@@ -17,7 +17,7 @@ import { SuggestInput } from '@/components/shared/suggest-input'
 import { cn } from '@/lib/utils'
 
 type ItemType =
-  | 'service' | 'device' | 'host' | 'vm' | 'lxc'
+  | 'service' | 'device' | 'host' | 'vm'
   | 'vlan' | 'dns' | 'proxy' | 'backup' | 'doc'
 
 const ITEM_GROUPS: {
@@ -27,16 +27,15 @@ const ITEM_GROUPS: {
   {
     label: 'Infrastructure — add these first',
     items: [
-      { type: 'device',     label: 'Device',               description: 'A physical machine (server, NAS, switch). The hardware everything runs on.', icon: Server },
-      { type: 'host',       label: 'Virtualisation Host',  description: 'A hypervisor like Proxmox. Lives on a Device and runs VMs and LXCs.', icon: Cpu },
-      { type: 'vm',         label: 'Virtual Machine',      description: 'A VM inside Proxmox or similar. Needs a Virtualisation Host.', icon: LayoutGrid },
-      { type: 'lxc',        label: 'LXC Container',        description: 'A lightweight Linux container in Proxmox. Tick "Runs Docker" on the LXC if it runs Docker inside.', icon: Container },
+      { type: 'device', label: 'Device',              description: 'A physical machine (server, NAS, switch). The hardware everything runs on.', icon: Server },
+      { type: 'host',   label: 'Virtualisation Host', description: 'A hypervisor like Proxmox. Lives on a Device and runs VMs and services.', icon: Cpu },
+      { type: 'vm',     label: 'Virtual Machine',     description: 'A VM inside Proxmox or similar. Needs a Virtualisation Host.', icon: LayoutGrid },
     ],
   },
   {
     label: 'Services & content',
     items: [
-      { type: 'service', label: 'Service',            description: 'An app or service (Plex, Grafana, etc). Use the guided setup to link it through your stack.', icon: Boxes },
+      { type: 'service', label: 'Service',            description: 'An app or service (Plex, Grafana, etc). Each service runs in its own LXC on Proxmox.', icon: Boxes },
       { type: 'backup',  label: 'Backup Job',         description: 'A scheduled backup job for any item.', icon: HardDrive },
       { type: 'doc',     label: 'Documentation Page', description: 'Notes, setup guides, or runbooks.', icon: FileText },
     ],
@@ -61,7 +60,6 @@ interface NamedItem { id: string; name: string; ip?: string | null }
 interface RelatedData {
   virtualHosts: NamedItem[]
   vms: NamedItem[]
-  lxcs: NamedItem[]
   devices: NamedItem[]
 }
 
@@ -74,20 +72,18 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [related, setRelated] = useState<RelatedData>({ virtualHosts: [], vms: [], lxcs: [], devices: [] })
+  const [related, setRelated] = useState<RelatedData>({ virtualHosts: [], vms: [], devices: [] })
 
   useEffect(() => {
     if (step !== 'form' && step !== 'guided') return
     Promise.all([
       fetch('/api/virtualisation/hosts').then(r => r.json()),
       fetch('/api/virtualisation/vms').then(r => r.json()),
-      fetch('/api/virtualisation/lxcs').then(r => r.json()),
       fetch('/api/devices').then(r => r.json()),
-    ]).then(([virtualHosts, vms, lxcs, devices]) => {
+    ]).then(([virtualHosts, vms, devices]) => {
       setRelated({
         virtualHosts: virtualHosts.map((h: any) => ({ id: h.id, name: h.name, ip: h.ip })),
         vms: vms.map((v: any) => ({ id: v.id, name: v.name, ip: v.ip })),
-        lxcs: lxcs.map((l: any) => ({ id: l.id, name: l.name, ip: l.ip })),
         devices: devices.map((d: any) => ({ id: d.id, name: d.name })),
       })
     }).catch(() => {})
@@ -113,7 +109,7 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
     setSaving(true); setError('')
     const endpointMap: Record<ItemType, string> = {
       service: '/api/services', device: '/api/devices', host: '/api/virtualisation/hosts',
-      vm: '/api/virtualisation/vms', lxc: '/api/virtualisation/lxcs',
+      vm: '/api/virtualisation/vms',
       vlan: '/api/network/vlans',
       dns: '/api/network/dns', proxy: '/api/network/proxy', backup: '/api/backups', doc: '/api/docs',
     }
@@ -127,7 +123,6 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
       const redirectMap: Record<ItemType, string> = {
         service: `/services/${data.id}`, device: `/devices/${data.id}`,
         host: `/virtualisation/hosts/${data.id}`, vm: `/virtualisation/vms/${data.id}`,
-        lxc: `/virtualisation/lxcs/${data.id}`,
         vlan: `/network`, dns: `/network`, proxy: `/network`,
         backup: `/backups/${data.id}`, doc: `/docs/${data.id}`,
       }
@@ -157,14 +152,14 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
             <div className="rounded-xl border border-border bg-white/[0.03] px-4 py-3 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typical setup</p>
               <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                {['Proxmox Host', 'LXC', 'Service'].map((label, i) => (
+                {['Proxmox Host', 'Service (LXC)'].map((label, i) => (
                   <span key={label} className="flex items-center gap-1.5">
                     {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />}
                     <span className="px-2 py-0.5 rounded-md bg-muted font-medium text-foreground">{label}</span>
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Each service has its own dedicated LXC. Tick "Runs Docker" on the LXC if Docker is the runtime.</p>
+              <p className="text-xs text-muted-foreground">Each service runs in its own LXC. Tick "Runs Docker" when the service runs inside Docker on the LXC.</p>
             </div>
             {ITEM_GROUPS.map(group => (
               <div key={group.label} className="space-y-2">
@@ -205,7 +200,6 @@ export function CreateWizard({ open, onClose }: CreateWizardProps) {
               {selectedType === 'device'     && <DeviceForm     data={formData} onChange={handleField} />}
               {selectedType === 'host'       && <HostForm       data={formData} onChange={handleField} related={related} />}
               {selectedType === 'vm'         && <VMForm         data={formData} onChange={handleField} related={related} />}
-              {selectedType === 'lxc'        && <LXCForm        data={formData} onChange={handleField} related={related} />}
               {selectedType === 'vlan'       && <VLANForm       data={formData} onChange={handleField} />}
               {selectedType === 'dns'        && <DNSForm        data={formData} onChange={handleField} />}
               {selectedType === 'proxy'      && <ProxyForm      data={formData} onChange={handleField} />}
@@ -234,12 +228,12 @@ interface SlotValue {
 
 const emptySlot = (): SlotValue => ({ existingId: null, newData: null })
 
-type GuidedStep = 'runtime' | 'host' | 'lxc' | 'vm' | 'device-slot' | 'details'
+type GuidedStep = 'runtime' | 'host' | 'vm' | 'device-slot' | 'details'
 
 function stepsForRuntime(r: Runtime): GuidedStep[] {
   switch (r) {
-    case 'lxc':          return ['host', 'lxc', 'details']
-    case 'vm-direct':    return ['host', 'vm',  'details']
+    case 'lxc':          return ['host', 'details']
+    case 'vm-direct':    return ['host', 'vm', 'details']
     case 'device-direct':return ['device-slot', 'details']
     case 'skip':         return ['details']
   }
@@ -256,11 +250,9 @@ function GuidedServiceFlow({
   const [steps, setSteps]           = useState<GuidedStep[]>([])
   const [stepIdx, setStepIdx]       = useState(0)
   const [host, setHost]         = useState<SlotValue>(emptySlot())
-  const [lxc, setLxc]           = useState<SlotValue>(emptySlot())
-  const [lxcHasDocker, setLxcHasDocker] = useState(true)
   const [vm, setVm]             = useState<SlotValue>(emptySlot())
   const [device, setDevice]     = useState<SlotValue>(emptySlot())
-  const [service, setService]       = useState({ name: '', url: '', status: 'ACTIVE', category: '' })
+  const [service, setService]       = useState({ name: '', url: '', status: 'ACTIVE', category: '', ctid: '', hasDocker: true })
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
 
@@ -285,7 +277,6 @@ function GuidedServiceFlow({
     if (!runtime) return false
     switch (currentStep) {
       case 'host':        return !!(host.existingId || host.newData?.name)
-      case 'lxc':         return !!(lxc.existingId || lxc.newData?.name)
       case 'vm':          return !!(vm.existingId || vm.newData?.name)
       case 'device-slot': return !!(device.existingId || device.newData?.name)
       case 'details':     return !!service.name.trim()
@@ -304,15 +295,7 @@ function GuidedServiceFlow({
         hostId = (await r.json()).id
       }
 
-      // 2. Create LXC if new
-      let lxcId = lxc.existingId
-      if (!lxcId && lxc.newData?.name && hostId) {
-        const r = await fetch('/api/virtualisation/lxcs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...lxc.newData, hostId, status: 'ACTIVE', hasDocker: lxcHasDocker }) })
-        if (!r.ok) { setError('Failed to create LXC.'); setSaving(false); return }
-        lxcId = (await r.json()).id
-      }
-
-      // 3. Create VM if new
+      // 2. Create VM if new
       let vmId = vm.existingId
       if (!vmId && vm.newData?.name && hostId) {
         const r = await fetch('/api/virtualisation/vms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...vm.newData, hostId, status: 'ACTIVE' }) })
@@ -320,7 +303,7 @@ function GuidedServiceFlow({
         vmId = (await r.json()).id
       }
 
-      // 4. Create device if new
+      // 3. Create device if new
       let deviceId = device.existingId
       if (!deviceId && device.newData?.name) {
         const r = await fetch('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...device.newData, status: 'ACTIVE', type: 'SERVER' }) })
@@ -328,11 +311,18 @@ function GuidedServiceFlow({
         deviceId = (await r.json()).id
       }
 
-      // 5. Create service
-      const svcBody: Record<string, string | null> = { ...service }
-      if (lxcId)        svcBody.lxcId    = lxcId
-      else if (vmId)    svcBody.vmId     = vmId
-      else if (deviceId) svcBody.deviceId = deviceId
+      // 4. Create service
+      const { ctid, hasDocker, ...svcRest } = service
+      const svcBody: Record<string, string | boolean | null> = { ...svcRest }
+      if (runtime === 'lxc' && hostId) {
+        svcBody.virtualHostId = hostId
+        svcBody.ctid = ctid || null
+        svcBody.hasDocker = hasDocker
+      } else if (vmId) {
+        svcBody.vmId = vmId
+      } else if (deviceId) {
+        svcBody.deviceId = deviceId
+      }
 
       const r = await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(svcBody) })
       if (!r.ok) { setError('Failed to create service.'); setSaving(false); return }
@@ -343,7 +333,7 @@ function GuidedServiceFlow({
   // Progress breadcrumb
   const allSteps: GuidedStep[] = runtime ? steps : []
   const breadcrumbLabels: Record<GuidedStep, string> = {
-    runtime: 'Setup', host: 'Proxmox', lxc: 'LXC', vm: 'VM',
+    runtime: 'Setup', host: 'Proxmox', vm: 'VM',
     'device-slot': 'Device', details: 'Service',
   }
 
@@ -416,43 +406,6 @@ function GuidedServiceFlow({
         />
       )}
 
-      {/* Step: LXC */}
-      {currentStep === 'lxc' && (
-        <div className="space-y-4">
-          <SelectOrCreate
-            label="LXC Container"
-            hint="Pick an existing LXC or create a new one."
-            items={related.lxcs}
-            selected={lxc}
-            onSelect={setLxc}
-            newFields={[
-              { key: 'name', label: 'Container name', placeholder: 'e.g. immich-lxc' },
-              { key: 'ip',   label: 'IP address',     placeholder: '192.168.1.20' },
-              { key: 'ctid', label: 'CT ID (optional)', placeholder: '101' },
-            ]}
-          />
-          <button
-            type="button"
-            onClick={() => setLxcHasDocker(v => !v)}
-            className={cn(
-              'flex items-center gap-3 w-full px-4 py-3 rounded-xl border text-left transition-colors',
-              lxcHasDocker ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-white/[0.03]'
-            )}
-          >
-            <div className={cn(
-              'w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0',
-              lxcHasDocker ? 'border-primary bg-primary' : 'border-muted-foreground/40'
-            )}>
-              {lxcHasDocker && <Check className="w-3 h-3 text-white" />}
-            </div>
-            <div>
-              <p className="text-sm font-medium">Runs Docker</p>
-              <p className="text-xs text-muted-foreground">Service runs inside a Docker container on this LXC</p>
-            </div>
-          </button>
-        </div>
-      )}
-
       {/* Step: VM */}
       {currentStep === 'vm' && (
         <SelectOrCreate
@@ -487,7 +440,7 @@ function GuidedServiceFlow({
       {currentStep === 'details' && (
         <div className="space-y-4">
           {runtime && runtime !== 'skip' && (
-            <StackSummary runtime={runtime} host={host} lxc={lxc} vm={vm} device={device} />
+            <StackSummary runtime={runtime} host={host} vm={vm} device={device} />
           )}
           <div className="space-y-1.5">
             <Label>Service name *</Label>
@@ -518,6 +471,33 @@ function GuidedServiceFlow({
               </Select>
             </div>
           </div>
+          {runtime === 'lxc' && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Container ID (CT) — optional</Label>
+                <Input placeholder="101" value={service.ctid} onChange={e => setService(s => ({ ...s, ctid: e.target.value }))} className="font-mono" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setService(s => ({ ...s, hasDocker: !s.hasDocker }))}
+                className={cn(
+                  'flex items-center gap-3 w-full px-4 py-3 rounded-xl border text-left transition-colors',
+                  service.hasDocker ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-white/[0.03]'
+                )}
+              >
+                <div className={cn(
+                  'w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0',
+                  service.hasDocker ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                )}>
+                  {service.hasDocker && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Runs Docker</p>
+                  <p className="text-xs text-muted-foreground">Service runs inside a Docker container on this LXC</p>
+                </div>
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -644,15 +624,15 @@ function SelectOrCreate({
 
 // ─── Stack summary shown on the final details step ────────────────────────────
 
-function StackSummary({ runtime, host, lxc, vm, device }: {
+function StackSummary({ runtime, host, vm, device }: {
   runtime: Runtime
-  host: SlotValue; lxc: SlotValue; vm: SlotValue; device: SlotValue
+  host: SlotValue; vm: SlotValue; device: SlotValue
 }) {
   const parts: string[] = []
   const name = (slot: SlotValue, fallback: string) =>
     slot.existingId ? fallback : (slot.newData?.name ?? fallback)
 
-  if (runtime === 'lxc')              parts.push(`LXC: ${name(lxc, 'LXC')}`)
+  if (runtime === 'lxc')              parts.push(`Host: ${name(host, 'Proxmox')}`)
   else if (runtime === 'vm-direct')   parts.push(`VM: ${name(vm, 'VM')}`)
   else if (runtime === 'device-direct') parts.push(`Device: ${name(device, 'Device')}`)
 
@@ -791,24 +771,6 @@ function VMForm({ data, onChange, related }: { data: Record<string, string>; onC
   )
 }
 
-function LXCForm({ data, onChange, related }: { data: Record<string, string>; onChange: (k: string, v: string) => void; related: RelatedData }) {
-  return (
-    <>
-      <Field label="Container name *"><Input placeholder="e.g. Docker LXC" value={data.name ?? ''} onChange={e => onChange('name', e.target.value)} /></Field>
-      {related.virtualHosts.length > 0
-        ? <HostSelect label="Which host runs this LXC? *" items={related.virtualHosts} value={data.hostId ?? ''} onChange={v => onChange('hostId', v)} placeholder="Select virtualisation host…" />
-        : <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">No virtualisation hosts yet — create one first.</p>}
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="CT ID"><Input placeholder="200" value={data.ctid ?? ''} onChange={e => onChange('ctid', e.target.value)} /></Field>
-        <Field label="Status"><StatusSelect value={data.status} onChange={v => onChange('status', v)} /></Field>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="IP address"><Input placeholder="192.168.10.20" value={data.ip ?? ''} onChange={e => onChange('ip', e.target.value)} /></Field>
-        <Field label="OS"><Input placeholder="e.g. Debian 12" value={data.os ?? ''} onChange={e => onChange('os', e.target.value)} /></Field>
-      </div>
-    </>
-  )
-}
 
 function VLANForm({ data, onChange }: { data: Record<string, string>; onChange: (k: string, v: string) => void }) {
   return (

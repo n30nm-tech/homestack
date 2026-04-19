@@ -14,7 +14,6 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       tags: true,
       host: true,
       services: { select: { id: true, name: true, status: true, url: true } },
-      dockerHosts: true,
       backupJobs: true,
       attachments: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -70,7 +69,6 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
 
   if (new URL(req.url).searchParams.get('permanent') === 'true') {
     await prisma.$transaction([
-      prisma.dockerHost.updateMany({ where: { vmId: id }, data: { vmId: null } }),
       prisma.service.updateMany({ where: { vmId: id }, data: { vmId: null } }),
       prisma.backupJob.updateMany({ where: { vmId: id }, data: { vmId: null } }),
       prisma.attachment.deleteMany({ where: { vmId: id } }),

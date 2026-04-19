@@ -8,7 +8,7 @@ const ALLOWED: Record<string, string[]> = {
   Service:    ['category'],
   BackupJob:  ['tool', 'destination', 'schedule', 'retention', 'backupType'],
   VirtualHost:['purpose'],
-  LXC:        ['dockerDataPath'],
+
 }
 
 export async function GET(req: NextRequest) {

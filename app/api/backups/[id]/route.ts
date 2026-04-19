@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const job = await prisma.backupJob.findUnique({
     where: { id: id },
     include: {
-      service: true, device: true, vm: true, lxc: true, dockerHost: true, virtualHost: true,
+      service: true, device: true, vm: true, virtualHost: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
     },
   })

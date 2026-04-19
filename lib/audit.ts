@@ -21,8 +21,6 @@ type AuditTarget =
   | { serviceId: string }
   | { deviceId: string }
   | { vmId: string }
-  | { lxcId: string }
-  | { dockerHostId: string }
   | { virtualHostId: string }
   | { backupJobId: string }
   | { dnsRecordId: string }

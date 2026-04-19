@@ -12,13 +12,10 @@ async function main() {
     prisma.dNSRecord.deleteMany({}),
     prisma.backupJob.deleteMany({}),
     prisma.documentationPage.deleteMany({}),
-    // Services (depend on dockerHost/vm/lxc/device)
+    // Services (depend on vm/virtualHost/device)
     prisma.service.deleteMany({}),
-    // Docker hosts (depend on vm/lxc)
-    prisma.dockerHost.deleteMany({}),
-    // VMs and LXCs (depend on virtualHost)
+    // VMs (depend on virtualHost)
     prisma.vM.deleteMany({}),
-    prisma.lXC.deleteMany({}),
     // Virtual hosts (depend on device)
     prisma.virtualHost.deleteMany({}),
     // Devices, VLANs, Tags

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const search = { contains: q, mode: 'insensitive' as const }
 
-  const [services, devices, vms, lxcs, virtualHosts, dockerHosts, vlans, dnsRecords, proxies, backups, docs] =
+  const [services, devices, vms, virtualHosts, vlans, dnsRecords, proxies, backups, docs] =
     await Promise.all([
       prisma.service.findMany({
         where: { archived: false, OR: [{ name: search }, { description: search }, { category: search }, { url: search }] },
@@ -28,19 +28,9 @@ export async function GET(req: NextRequest) {
         select: { id: true, name: true, status: true, ip: true },
         take: 4,
       }),
-      prisma.lXC.findMany({
-        where: { archived: false, OR: [{ name: search }, { hostname: search }, { ip: search }] },
-        select: { id: true, name: true, status: true, ip: true },
-        take: 4,
-      }),
       prisma.virtualHost.findMany({
         where: { archived: false, OR: [{ name: search }, { hostname: search }, { ip: search }] },
         select: { id: true, name: true, status: true, type: true },
-        take: 3,
-      }),
-      prisma.dockerHost.findMany({
-        where: { archived: false, OR: [{ name: search }, { hostname: search }, { ip: search }] },
-        select: { id: true, name: true, status: true, ip: true },
         take: 3,
       }),
       prisma.vLAN.findMany({
@@ -75,8 +65,6 @@ export async function GET(req: NextRequest) {
     ...devices.map(d => ({ id: d.id, type: 'device' as const, name: d.name, subtitle: d.type, status: d.status, href: `/devices/${d.id}` })),
     ...virtualHosts.map(h => ({ id: h.id, type: 'virtualHost' as const, name: h.name, subtitle: h.type, status: h.status, href: `/virtualisation/hosts/${h.id}` })),
     ...vms.map(v => ({ id: v.id, type: 'vm' as const, name: v.name, subtitle: v.ip ?? undefined, status: v.status, href: `/virtualisation/vms/${v.id}` })),
-    ...lxcs.map(l => ({ id: l.id, type: 'lxc' as const, name: l.name, subtitle: l.ip ?? undefined, status: l.status, href: `/virtualisation/lxcs/${l.id}` })),
-    ...dockerHosts.map(d => ({ id: d.id, type: 'dockerHost' as const, name: d.name, subtitle: d.ip ?? undefined, status: d.status, href: `/virtualisation/docker/${d.id}` })),
     ...vlans.map(v => ({ id: v.id, type: 'vlan' as const, name: `VLAN ${v.vlanId} — ${v.name}`, subtitle: v.subnet ?? undefined, href: `/network` })),
     ...dnsRecords.map(r => ({ id: r.id, type: 'dns' as const, name: `${r.recordName}.${r.domain ?? ''}`, subtitle: r.ip ?? undefined, href: `/network` })),
     ...proxies.map(p => ({ id: p.id, type: 'proxy' as const, name: p.name, subtitle: p.domain ?? undefined, href: `/network` })),

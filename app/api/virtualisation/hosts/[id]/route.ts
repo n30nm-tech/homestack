@@ -14,9 +14,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       tags: true,
       device: true,
       vms: { include: { services: { select: { id: true, name: true, status: true } } } },
-      lxcs: { include: { services: { select: { id: true, name: true, status: true } } } },
-      dockerHosts: { include: { services: { select: { id: true, name: true, status: true } } } },
-      services: { select: { id: true, name: true, status: true } },
+      services: { select: { id: true, name: true, status: true, ctid: true, hasDocker: true } },
       backupJobs: true,
       attachments: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -67,15 +65,14 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   const { id } = await props.params
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const host = await prisma.virtualHost.findUnique({ where: { id }, include: { vms: { select: { id: true } }, lxcs: { select: { id: true } } } })
+  const host = await prisma.virtualHost.findUnique({ where: { id }, include: { vms: { select: { id: true } } } })
   if (!host) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (new URL(req.url).searchParams.get('permanent') === 'true') {
-    if (host.vms.length > 0 || host.lxcs.length > 0)
-      return NextResponse.json({ error: 'Archive or delete all VMs and LXCs on this host first.' }, { status: 409 })
+    if (host.vms.length > 0)
+      return NextResponse.json({ error: 'Archive or delete all VMs on this host first.' }, { status: 409 })
     await prisma.$transaction([
       prisma.service.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
-      prisma.dockerHost.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
       prisma.backupJob.updateMany({ where: { virtualHostId: id }, data: { virtualHostId: null } }),
       prisma.attachment.deleteMany({ where: { virtualHostId: id } }),
       prisma.auditLog.deleteMany({ where: { virtualHostId: id } }),

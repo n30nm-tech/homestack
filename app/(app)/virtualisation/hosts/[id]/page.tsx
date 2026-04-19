@@ -7,6 +7,7 @@ import { AssignServiceButton } from '@/components/shared/assign-service-button'
 import { VHOST_TYPE_LABELS, formatMB, formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 import { GenericEditButton } from '@/components/shared/generic-edit-button'
+import { Container } from 'lucide-react'
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
@@ -22,9 +23,7 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
       device: true,
       tags: true,
       vms: { include: { services: { select: { id: true, name: true, status: true } } } },
-      lxcs: { include: { services: { select: { id: true, name: true, status: true } } } },
-      dockerHosts: { include: { services: { select: { id: true, name: true, status: true } } } },
-      services: { select: { id: true, name: true, status: true } },
+      services: { where: { archived: false }, select: { id: true, name: true, status: true, ctid: true, hasDocker: true } },
       backupJobs: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
     },
@@ -64,32 +63,31 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
           </DetailGrid>
         </div>
 
-        {/* Services directly on this host */}
-        {host.services.length > 0 && (
-          <div className="section-card space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Services ({host.services.length})</h2>
-              <AssignServiceButton relationField="virtualHostId" relationId={host.id} label={host.name} />
-            </div>
+        {/* Services (LXC containers on this host) */}
+        <div className="section-card space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Services ({host.services.length})</h2>
+            <AssignServiceButton relationField="virtualHostId" relationId={host.id} label={host.name} />
+          </div>
+          {host.services.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No services on this host yet.</p>
+          ) : (
             <div className="space-y-2">
-              {host.services.map((svc: any) => (
+              {host.services.map(svc => (
                 <div key={svc.id} className="flex items-center gap-3">
                   <Link href={`/services/${svc.id}`} className="text-sm hover:text-primary transition-colors">{svc.name}</Link>
+                  {svc.ctid && <span className="text-xs text-muted-foreground font-mono">CT{svc.ctid}</span>}
+                  {svc.hasDocker && (
+                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                      <Container className="w-2.5 h-2.5" />Docker
+                    </span>
+                  )}
                   <StatusBadge status={svc.status} />
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        {host.services.length === 0 && (
-          <div className="section-card space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Services</h2>
-              <AssignServiceButton relationField="virtualHostId" relationId={host.id} label={host.name} />
-            </div>
-            <p className="text-sm text-muted-foreground">No services directly assigned to this host.</p>
-          </div>
-        )}
+          )}
+        </div>
 
         {host.vms.length > 0 && (
           <div className="section-card space-y-4">
@@ -101,23 +99,6 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
                   <StatusBadge status={vm.status} />
                   {vm.services.length > 0 && (
                     <span className="text-xs text-muted-foreground">{vm.services.length} service{vm.services.length !== 1 ? 's' : ''}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {host.lxcs.length > 0 && (
-          <div className="section-card space-y-4">
-            <h2 className="text-sm font-semibold">LXC Containers ({host.lxcs.length})</h2>
-            <div className="space-y-2">
-              {host.lxcs.map(lxc => (
-                <div key={lxc.id} className="flex items-center gap-3">
-                  <Link href={`/virtualisation/lxcs/${lxc.id}`} className="text-sm hover:text-primary transition-colors">{lxc.name}</Link>
-                  <StatusBadge status={lxc.status} />
-                  {lxc.services.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{lxc.services.length} service{lxc.services.length !== 1 ? 's' : ''}</span>
                   )}
                 </div>
               ))}

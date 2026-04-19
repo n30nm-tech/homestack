@@ -11,7 +11,7 @@ import { ServiceImportDialog } from './service-import-dialog'
 import { QuickAssignHosting } from '@/components/shared/quick-assign-hosting'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
-import { ExternalLink, Star, Download } from 'lucide-react'
+import { ExternalLink, Star, Download, Container } from 'lucide-react'
 import { iconUrl } from '@/lib/utils'
 
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
@@ -29,8 +29,6 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
       device: true,
       virtualHost: true,
       vm: { include: { host: true } },
-      lxc: { include: { host: true } },
-      dockerHost: { include: { vm: true, lxc: true, virtualHost: true } },
       dnsRecords: true,
       reverseProxies: true,
       backupJobs: true,
@@ -55,6 +53,11 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
                 <img src={iconUrl(service.icon)} alt="" className="w-8 h-8 rounded object-contain" />
               )}
               <StatusBadge status={service.status} />
+              {service.hasDocker && (
+                <span className="flex items-center gap-1 text-xs text-blue-400 bg-blue-400/10 border border-blue-400/20 rounded px-1.5 py-0.5">
+                  <Container className="w-3 h-3" /> Docker
+                </span>
+              )}
               {service.favourite && (
                 <span className="flex items-center gap-1 text-xs text-amber-400">
                   <Star className="w-3 h-3 fill-amber-400" /> Favourite
@@ -88,8 +91,6 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
             <ServiceImportDialog serviceId={service.id} />
             <ServiceEditForm service={{
               ...service,
-              dockerHostId: service.dockerHostId,
-              lxcId: service.lxcId,
               vmId: service.vmId,
               virtualHostId: service.virtualHostId,
               deviceId: service.deviceId,
@@ -121,15 +122,18 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
             <h2 className="text-sm font-semibold">Hosting</h2>
             <QuickAssignHosting
               serviceId={service.id}
-              current={{ lxcId: service.lxcId, vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId }}
+              current={{ vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId, ctid: service.ctid, hasDocker: service.hasDocker }}
             />
           </div>
           <DetailGrid>
             <DetailField label="Hosted on" value={getHostingSummary(service)} />
-            {service.lxc && (
-              <DetailField label="LXC" value={
-                <Link href={`/virtualisation/lxcs/${service.lxc.id}`} className="text-primary hover:underline text-sm">
-                  {service.lxc.name} (CT{service.lxc.ctid}) on {service.lxc.host.name}
+            {service.ctid && (
+              <DetailField label="Container ID" value={`CT${service.ctid}`} mono />
+            )}
+            {service.virtualHost && (
+              <DetailField label="Proxmox host" value={
+                <Link href={`/virtualisation/hosts/${service.virtualHost.id}`} className="text-primary hover:underline text-sm">
+                  {service.virtualHost.name}
                 </Link>
               } />
             )}

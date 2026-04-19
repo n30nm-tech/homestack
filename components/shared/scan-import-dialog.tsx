@@ -305,13 +305,11 @@ function AppPreviewCard({ app, selected, onToggle }: { app: AppInfo; selected: b
 // ─── Dialog ───────────────────────────────────────────────────────────────────
 
 interface ScanImportDialogProps {
-  // If provided, created services will be linked to this LXC/VM/host
-  linkLxcId?: string
   linkVmId?: string
   linkVirtualHostId?: string
 }
 
-export function ScanImportDialog({ linkLxcId, linkVmId, linkVirtualHostId }: ScanImportDialogProps) {
+export function ScanImportDialog({ linkVmId, linkVirtualHostId }: ScanImportDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [raw, setRaw] = useState('')
@@ -376,8 +374,7 @@ export function ScanImportDialog({ linkLxcId, linkVmId, linkVirtualHostId }: Sca
       }
 
       // Link to parent
-      if (linkLxcId) body.lxcId = linkLxcId
-      else if (linkVmId) body.vmId = linkVmId
+      if (linkVmId) body.vmId = linkVmId
       else if (linkVirtualHostId) body.virtualHostId = linkVirtualHostId
 
       try {

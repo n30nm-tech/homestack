@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { STATUS_LABELS, DEVICE_TYPE_LABELS, VHOST_TYPE_LABELS, formatDate, formatDateTime, formatMB } from '@/lib/utils'
+import { STATUS_LABELS, DEVICE_TYPE_LABELS, VHOST_TYPE_LABELS, formatDateTime, formatMB } from '@/lib/utils'
 
 // ─── Markdown generators ──────────────────────────────────────────────────────
 
@@ -20,18 +20,16 @@ function mdCode(lang: string, content: string): string {
 // ─── Full export ──────────────────────────────────────────────────────────────
 
 export async function generateFullMarkdownExport(): Promise<string> {
-  const [services, devices, virtualHosts, vms, lxcs, dockerHosts, vlans, dnsRecords, reverseProxies, backupJobs, docPages] =
+  const [services, devices, virtualHosts, vms, vlans, dnsRecords, reverseProxies, backupJobs, docPages] =
     await Promise.all([
-      prisma.service.findMany({ where: { archived: false }, include: { tags: true, device: true, virtualHost: true, vm: true, lxc: true, dockerHost: true, reverseProxies: true, backupJobs: true }, orderBy: { name: 'asc' } }),
+      prisma.service.findMany({ where: { archived: false }, include: { tags: true, device: true, virtualHost: true, vm: true, reverseProxies: true, backupJobs: true }, orderBy: { name: 'asc' } }),
       prisma.device.findMany({ where: { archived: false }, include: { tags: true }, orderBy: { name: 'asc' } }),
-      prisma.virtualHost.findMany({ where: { archived: false }, include: { tags: true, device: true, vms: true, lxcs: true, dockerHosts: true }, orderBy: { name: 'asc' } }),
+      prisma.virtualHost.findMany({ where: { archived: false }, include: { tags: true, device: true, vms: true, services: { where: { archived: false }, select: { name: true, ctid: true } } }, orderBy: { name: 'asc' } }),
       prisma.vM.findMany({ where: { archived: false }, include: { tags: true, host: true }, orderBy: { name: 'asc' } }),
-      prisma.lXC.findMany({ where: { archived: false }, include: { tags: true, host: true }, orderBy: { name: 'asc' } }),
-      prisma.dockerHost.findMany({ where: { archived: false }, include: { vm: true, lxc: true }, orderBy: { name: 'asc' } }),
       prisma.vLAN.findMany({ where: { archived: false }, orderBy: { vlanId: 'asc' } }),
       prisma.dNSRecord.findMany({ where: { archived: false }, include: { service: true }, orderBy: { recordName: 'asc' } }),
       prisma.reverseProxy.findMany({ where: { archived: false }, include: { service: true }, orderBy: { name: 'asc' } }),
-      prisma.backupJob.findMany({ where: { archived: false }, include: { service: true, device: true, vm: true, lxc: true, dockerHost: true, virtualHost: true }, orderBy: { name: 'asc' } }),
+      prisma.backupJob.findMany({ where: { archived: false }, include: { service: true, device: true, vm: true, virtualHost: true }, orderBy: { name: 'asc' } }),
       prisma.documentationPage.findMany({ where: { archived: false }, orderBy: { title: 'asc' } }),
     ])
 
@@ -42,7 +40,6 @@ export async function generateFullMarkdownExport(): Promise<string> {
   lines.push(`*Exported on ${now}*\n`)
   lines.push(`---\n`)
 
-  // Table of contents
   lines.push(`## Contents\n`)
   lines.push(`1. [Services](#services)`)
   lines.push(`2. [Devices](#devices)`)
@@ -61,20 +58,15 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (s.url) lines.push(md('URL', s.url))
     if (s.ip || s.port) lines.push(md('Endpoint', `${s.ip ?? ''}${s.port ? `:${s.port}` : ''}`))
     if (s.category) lines.push(md('Category', s.category))
+    if (s.ctid) lines.push(md('Container ID', `CT${s.ctid}`))
+    if (s.hasDocker) lines.push(md('Runtime', 'Docker'))
 
-    // Hosting
-    if (s.dockerHost) lines.push(md('Hosted on', `Docker host: ${s.dockerHost.name}`))
-    else if (s.lxc) lines.push(md('Hosted on', `LXC: ${s.lxc.name}`))
-    else if (s.vm) lines.push(md('Hosted on', `VM: ${s.vm.name}`))
+    if (s.vm) lines.push(md('Hosted on', `VM: ${s.vm.name}`))
     else if (s.virtualHost) lines.push(md('Hosted on', s.virtualHost.name))
     else if (s.device) lines.push(md('Hosted on', s.device.name))
 
-    if (s.reverseProxies.length > 0) {
-      lines.push(md('Published via', s.reverseProxies.map(rp => rp.name).join(', ')))
-    }
-    if (s.backupJobs.length > 0) {
-      lines.push(md('Backed up by', s.backupJobs.map(b => b.name).join(', ')))
-    }
+    if (s.reverseProxies.length > 0) lines.push(md('Published via', s.reverseProxies.map(rp => rp.name).join(', ')))
+    if (s.backupJobs.length > 0) lines.push(md('Backed up by', s.backupJobs.map(b => b.name).join(', ')))
     if (s.tags.length > 0) lines.push(md('Tags', s.tags.map(t => t.name).join(', ')))
 
     if (s.dockerCompose) lines.push(mdSection('Docker Compose', mdCode('yaml', s.dockerCompose)))
@@ -115,7 +107,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (h.os) lines.push(md('OS', h.os))
     if (h.device) lines.push(md('Physical host', h.device.name))
     lines.push(md('VMs', h.vms.map(v => v.name).join(', ') || 'None'))
-    lines.push(md('LXCs', h.lxcs.map(l => l.name).join(', ') || 'None'))
+    lines.push(md('Services', h.services.map(s => s.ctid ? `${s.name} (CT${s.ctid})` : s.name).join(', ') || 'None'))
     if (h.notes) lines.push(mdSection('Notes', h.notes))
     lines.push('\n')
   }
@@ -131,18 +123,6 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (v.cpu) lines.push(md('vCPUs', String(v.cpu)))
     if (v.ram) lines.push(md('RAM', formatMB(v.ram)))
     if (v.notes) lines.push(mdSection('Notes', v.notes))
-    lines.push('\n')
-  }
-
-  lines.push(`### LXC Containers\n`)
-  for (const l of lxcs) {
-    lines.push(`#### ${l.name}\n`)
-    lines.push(md('Status', STATUS_LABELS[l.status]))
-    lines.push(md('Runs on', `Host: ${l.host.name}`))
-    if (l.ctid) lines.push(md('CT ID', l.ctid))
-    if (l.ip) lines.push(md('IP', l.ip))
-    if (l.os) lines.push(md('OS', l.os))
-    if (l.notes) lines.push(mdSection('Notes', l.notes))
     lines.push('\n')
   }
 
@@ -182,7 +162,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
   for (const b of backupJobs) {
     lines.push(`### ${b.name}\n`)
     if (b.description) lines.push(`${b.description}\n`)
-    const source = b.service?.name ?? b.device?.name ?? b.vm?.name ?? b.lxc?.name ?? b.dockerHost?.name ?? b.virtualHost?.name
+    const source = b.service?.name ?? b.device?.name ?? b.vm?.name ?? b.virtualHost?.name
     if (source) lines.push(md('Backs up', source))
     if (b.destination) lines.push(md('Destination', b.destination))
     if (b.backupType) lines.push(md('Type', b.backupType))
@@ -215,7 +195,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
 export async function generateServiceMarkdown(id: string): Promise<string> {
   const s = await prisma.service.findUnique({
     where: { id },
-    include: { tags: true, device: true, virtualHost: true, vm: true, lxc: true, dockerHost: true, reverseProxies: true, backupJobs: true, dnsRecords: true },
+    include: { tags: true, device: true, virtualHost: true, vm: true, reverseProxies: true, backupJobs: true, dnsRecords: true },
   })
   if (!s) return '# Not Found\n'
 
@@ -226,8 +206,8 @@ export async function generateServiceMarkdown(id: string): Promise<string> {
   if (s.url) lines.push(md('URL', s.url))
   if (s.ip || s.port) lines.push(md('Endpoint', `${s.ip ?? ''}${s.port ? `:${s.port}` : ''}`))
   if (s.category) lines.push(md('Category', s.category))
-  if (s.dockerHost) lines.push(md('Docker host', s.dockerHost.name))
-  if (s.lxc) lines.push(md('LXC', s.lxc.name))
+  if (s.ctid) lines.push(md('Container ID', `CT${s.ctid}`))
+  if (s.hasDocker) lines.push(md('Runtime', 'Docker'))
   if (s.vm) lines.push(md('VM', s.vm.name))
   if (s.virtualHost) lines.push(md('Host', s.virtualHost.name))
   if (s.device) lines.push(md('Device', s.device.name))

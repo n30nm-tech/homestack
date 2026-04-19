@@ -14,8 +14,6 @@ export async function DELETE(_req: NextRequest) {
   await prisma.reverseProxy.deleteMany()
   await prisma.dNSRecord.deleteMany()
   await prisma.service.deleteMany()
-  await prisma.dockerHost.deleteMany()
-  await prisma.lXC.deleteMany()
   await prisma.vM.deleteMany()
   await prisma.virtualHost.deleteMany()
   await prisma.vLAN.deleteMany()

@@ -22,7 +22,7 @@ const SUGGEST_FIELDS: Record<string, [string, string]> = {
   retention:   ['BackupJob',  'retention'],
   backupType:  ['BackupJob',  'backupType'],
   purpose:     ['VirtualHost','purpose'],
-  dockerDataPath: ['LXC',     'dockerDataPath'],
+
 }
 
 // Fields that render as a full-width textarea
@@ -182,7 +182,7 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
             <p className="text-sm font-medium">{fieldLabel}</p>
             {field === 'hasDocker' && (
               <p className="text-xs text-muted-foreground mt-0.5">
-                {checked ? 'Docker is running on this container — see the Docker section on the detail page.' : 'Enable to track Docker stacks and containers on this LXC.'}
+                {checked ? 'Docker is running on this container.' : 'Enable if Docker is running on this service container.'}
               </p>
             )}
           </div>

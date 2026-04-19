@@ -21,8 +21,6 @@ export default async function BackupDetailPage(props: { params: Promise<{ id: st
       service: true,
       device: true,
       vm: true,
-      lxc: true,
-      dockerHost: true,
       virtualHost: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
     },
@@ -30,9 +28,9 @@ export default async function BackupDetailPage(props: { params: Promise<{ id: st
 
   if (!job) notFound()
 
-  const source = job.service ?? job.device ?? job.vm ?? job.lxc ?? job.dockerHost ?? job.virtualHost
-  const sourceType = job.service ? 'service' : job.device ? 'device' : job.vm ? 'vm' : job.lxc ? 'lxc' : job.dockerHost ? 'dockerhost' : job.virtualHost ? 'host' : null
-  const sourceHref = sourceType === 'service' ? `/services/${source?.id}` : sourceType === 'device' ? `/devices/${source?.id}` : sourceType === 'vm' ? `/virtualisation/vms/${source?.id}` : sourceType === 'lxc' ? `/virtualisation/lxcs/${source?.id}` : sourceType === 'dockerhost' ? `/virtualisation/docker/${source?.id}` : sourceType === 'host' ? `/virtualisation/hosts/${source?.id}` : null
+  const source = job.service ?? job.device ?? job.vm ?? job.virtualHost
+  const sourceType = job.service ? 'service' : job.device ? 'device' : job.vm ? 'vm' : job.virtualHost ? 'host' : null
+  const sourceHref = sourceType === 'service' ? `/services/${source?.id}` : sourceType === 'device' ? `/devices/${source?.id}` : sourceType === 'vm' ? `/virtualisation/vms/${source?.id}` : sourceType === 'host' ? `/virtualisation/hosts/${source?.id}` : null
 
   return (
     <div className="flex flex-col min-h-full">

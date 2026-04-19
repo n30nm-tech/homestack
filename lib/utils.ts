@@ -83,12 +83,10 @@ export function getHostingSummary(item: {
   device?: { name: string } | null
   virtualHost?: { name: string } | null
   vm?: { name: string } | null
-  lxc?: { name: string } | null
-  dockerHost?: { name: string } | null
+  ctid?: string | null
 }): string {
-  if (item.dockerHost) return `Docker — ${item.dockerHost.name}`
-  if (item.lxc) return `LXC — ${item.lxc.name}`
   if (item.vm) return `VM — ${item.vm.name}`
+  if (item.virtualHost && item.ctid) return `CT${item.ctid} — ${item.virtualHost.name}`
   if (item.virtualHost) return item.virtualHost.name
   if (item.device) return item.device.name
   return 'Unassigned'

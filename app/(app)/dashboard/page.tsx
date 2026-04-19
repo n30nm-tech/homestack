@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import {
   Server, Boxes, Cpu, HardDrive,
-  Star, Box, ArrowUpRight, Activity,
+  Star, ArrowUpRight, Activity,
   AlertTriangle,
 } from 'lucide-react'
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const [services, devices, virtualHosts, backupJobs] = await Promise.all([
     prisma.service.findMany({
       where: { archived: false },
-      include: { device: true, virtualHost: true, vm: true, lxc: true, dockerHost: true },
+      include: { device: true, virtualHost: true, vm: true },
       orderBy: [{ favourite: 'desc' }, { name: 'asc' }],
     }),
     prisma.device.findMany({
@@ -36,8 +36,8 @@ export default async function DashboardPage() {
     prisma.virtualHost.findMany({
       where: { archived: false },
       include: {
-        vms:  { where: { archived: false }, select: { id: true, name: true, status: true, vmid: true, ip: true } },
-        lxcs: { where: { archived: false }, select: { id: true, name: true, status: true, ctid: true, ip: true } },
+        vms: { where: { archived: false }, select: { id: true, name: true, status: true, vmid: true, ip: true } },
+        services: { where: { archived: false }, select: { id: true } },
       },
       orderBy: [{ favourite: 'desc' }, { name: 'asc' }],
     }),
@@ -49,8 +49,7 @@ export default async function DashboardPage() {
     }),
   ])
 
-  const vms  = virtualHosts.flatMap(h => h.vms)
-  const lxcs = virtualHosts.flatMap(h => h.lxcs)
+  const vms = virtualHosts.flatMap(h => h.vms)
 
   const activeServices    = services.filter(s => s.status === 'ACTIVE').length
   const warningServices   = services.filter(s => s.status === 'WARNING').length
@@ -64,8 +63,7 @@ export default async function DashboardPage() {
   const failedBackups     = backupJobs.filter(b => b.status === 'FAILED').length
 
   const servicesByHost = services.reduce<Record<string, typeof services>>((acc, svc) => {
-    const key = svc.dockerHost?.name ?? svc.lxc?.name ?? svc.vm?.name
-      ?? svc.virtualHost?.name ?? svc.device?.name ?? 'Unassigned'
+    const key = svc.vm?.name ?? svc.virtualHost?.name ?? svc.device?.name ?? 'Unassigned'
     if (!acc[key]) acc[key] = []
     acc[key].push(svc)
     return acc
@@ -118,10 +116,10 @@ export default async function DashboardPage() {
               <ArrowUpRight className="w-4 h-4 text-transparent group-hover:text-muted-foreground transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
             </div>
             <div>
-              <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{vms.length + lxcs.length}</p>
-              <p className="text-sm text-muted-foreground mt-2">VMs &amp; LXCs</p>
+              <p className="text-5xl font-bold tracking-tight tabular-nums leading-none">{virtualHosts.length}</p>
+              <p className="text-sm text-muted-foreground mt-2">Proxmox Hosts</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {virtualHosts.length} {virtualHosts.length === 1 ? 'host' : 'hosts'}
+                {vms.length} VM{vms.length !== 1 ? 's' : ''}
               </p>
             </div>
           </Link>
@@ -171,7 +169,7 @@ export default async function DashboardPage() {
               <div className="dash-section">
                 <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border">
                   <Cpu className="w-3.5 h-3.5 text-violet-400" />
-                  <span className="text-sm font-semibold">Virtualisation</span>
+                  <span className="text-sm font-semibold">Proxmox Hosts</span>
                   <span className="text-xs text-muted-foreground tabular-nums ml-1">{virtualHosts.length}</span>
                   <Link href="/virtualisation" className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
                     View all →
@@ -188,13 +186,12 @@ export default async function DashboardPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{host.name}</p>
-                          {host.ip && <p className="text-xs font-mono text-muted-foreground mt-0.5">{host.ip}</p>}
                         </div>
                         <StatusBadge status={host.status} />
                       </div>
                       <div className="flex items-center gap-4 pt-2.5 border-t border-white/[0.05] text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5"><Cpu className="w-3 h-3" />{host.vms.length} VM{host.vms.length !== 1 ? 's' : ''}</span>
-                        <span className="flex items-center gap-1.5"><Box className="w-3 h-3" />{host.lxcs.length} LXC{host.lxcs.length !== 1 ? 's' : ''}</span>
+                        <span className="flex items-center gap-1.5"><Boxes className="w-3 h-3" />{host.services.length} service{host.services.length !== 1 ? 's' : ''}</span>
                       </div>
                     </Link>
                   ))}

@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Edit, Star, Archive, Trash2, Upload, Sparkles } from 'lucide-react'
+import { Edit, Star, Archive, Trash2, Upload, Sparkles, Check } from 'lucide-react'
 import { IconPicker } from '@/components/shared/icon-picker'
+import { cn } from '@/lib/utils'
 
 interface NamedItem { id: string; name: string }
 
@@ -27,6 +28,8 @@ interface ServiceEditFormProps {
     favourite: boolean
     archived: boolean
     icon: string | null
+    ctid: string | null
+    hasDocker: boolean
     containerImage: string | null
     stackFolder: string | null
     composeFilePath: string | null
@@ -41,8 +44,6 @@ interface ServiceEditFormProps {
     troubleshootingNotes: string | null
     extraInfo: string | null
     // hosting relationship IDs
-    dockerHostId: string | null
-    lxcId: string | null
     vmId: string | null
     virtualHostId: string | null
     deviceId: string | null
@@ -52,7 +53,7 @@ interface ServiceEditFormProps {
 type HostingType = 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
 
 function detectHostingType(svc: ServiceEditFormProps['service']): HostingType {
-  if (svc.lxcId) return 'lxc'
+  if (svc.virtualHostId && svc.ctid) return 'lxc'
   if (svc.vmId) return 'vm'
   if (svc.virtualHostId) return 'virtualhost'
   if (svc.deviceId) return 'device'
@@ -80,7 +81,6 @@ function parseCompose(yaml: string): {
     if (trimmed.startsWith('services:')) { inServices = true; continue }
     if (!inServices) continue
 
-    // First service key (2-space indent, not a sub-key)
     if (indent === 2 && !trimmed.startsWith('-') && trimmed.endsWith(':')) {
       inFirstService = true
       currentSection = ''
@@ -88,7 +88,6 @@ function parseCompose(yaml: string): {
     }
     if (!inFirstService) continue
 
-    // Top-level key inside first service (4-space indent)
     if (indent === 4 && !trimmed.startsWith('-')) {
       if (trimmed.startsWith('image:')) {
         result.image = trimmed.replace('image:', '').trim().replace(/['"]/g, '')
@@ -104,7 +103,6 @@ function parseCompose(yaml: string): {
       continue
     }
 
-    // List items under current section (6-space indent or - prefixed)
     if (inFirstService && trimmed.startsWith('-')) {
       const val = trimmed.replace(/^-\s*/, '').replace(/['"]/g, '').trim()
       if (currentSection === 'ports') result.ports.push(val)
@@ -112,12 +110,10 @@ function parseCompose(yaml: string): {
       if (currentSection === 'environment') result.envLines.push(val)
     }
 
-    // key: value env vars (indent === 6)
     if (inFirstService && currentSection === 'environment' && indent >= 6 && !trimmed.startsWith('-')) {
       result.envLines.push(trimmed)
     }
 
-    // Next top-level key — stop parsing first service
     if (indent === 2 && !trimmed.startsWith('-') && trimmed.endsWith(':') && inFirstService) break
   }
 
@@ -133,15 +129,14 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
 
   // Hosting state
   const [hostingType, setHostingType] = useState<HostingType>(detectHostingType(service))
-  const [lxcId, setLxcId] = useState(service.lxcId ?? '')
-  const [vmId, setVmId] = useState(service.vmId ?? '')
   const [virtualHostId, setVirtualHostId] = useState(service.virtualHostId ?? '')
+  const [vmId, setVmId] = useState(service.vmId ?? '')
   const [deviceId, setDeviceId] = useState(service.deviceId ?? '')
+  const [ctid, setCtid] = useState(service.ctid ?? '')
+  const [hasDocker, setHasDocker] = useState(service.hasDocker)
 
-  // Available options for dropdowns
-  const [lxcs, setLxcs] = useState<NamedItem[]>([])
-  const [vms, setVms] = useState<NamedItem[]>([])
   const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
+  const [vms, setVms] = useState<NamedItem[]>([])
   const [devices, setDevices] = useState<NamedItem[]>([])
 
   const [form, setForm] = useState({
@@ -173,14 +168,12 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   useEffect(() => {
     if (!open) return
     Promise.all([
-      fetch('/api/virtualisation/lxcs').then(r => r.json()),
-      fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/virtualisation/hosts').then(r => r.json()),
+      fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/devices').then(r => r.json()),
-    ]).then(([lx, vm, vh, dv]) => {
-      setLxcs(lx)
-      setVms(vm)
+    ]).then(([vh, vm, dv]) => {
       setVirtualHosts(vh)
+      setVms(vm)
       setDevices(dv)
     }).catch(() => {})
   }, [open])
@@ -194,7 +187,6 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
     if (parsed.image && !form.containerImage) set('containerImage', parsed.image)
     if (parsed.volumes.length > 0 && !form.bindMounts) set('bindMounts', parsed.volumes.join('\n'))
     if (parsed.envLines.length > 0 && !form.envVars) set('envVars', parsed.envLines.join('\n'))
-    // Extract first host port from first port mapping e.g. "8080:80"
     if (parsed.ports.length > 0 && !form.port) {
       const hostPort = parsed.ports[0].split(':')[0].replace(/[^0-9]/g, '')
       if (hostPort) set('port', hostPort)
@@ -203,13 +195,25 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   }
 
   function buildHostingBody() {
-    return {
-      dockerHostId:  null,
-      lxcId:         hostingType === 'lxc'         ? (lxcId         || null) : null,
-      vmId:          hostingType === 'vm'          ? (vmId          || null) : null,
-      virtualHostId: hostingType === 'virtualhost' ? (virtualHostId || null) : null,
-      deviceId:      hostingType === 'device'      ? (deviceId      || null) : null,
+    if (hostingType === 'lxc') {
+      return {
+        virtualHostId: virtualHostId || null,
+        ctid: ctid || null,
+        hasDocker,
+        vmId: null,
+        deviceId: null,
+      }
     }
+    if (hostingType === 'vm') {
+      return { vmId: vmId || null, virtualHostId: null, ctid: null, hasDocker: false, deviceId: null }
+    }
+    if (hostingType === 'virtualhost') {
+      return { virtualHostId: virtualHostId || null, ctid: null, hasDocker: false, vmId: null, deviceId: null }
+    }
+    if (hostingType === 'device') {
+      return { deviceId: deviceId || null, virtualHostId: null, ctid: null, hasDocker: false, vmId: null }
+    }
+    return { virtualHostId: null, ctid: null, hasDocker: false, vmId: null, deviceId: null }
   }
 
   async function save() {
@@ -351,12 +355,12 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
             <TabsContent value="hosting" className="space-y-4 mt-4">
               <div className="space-y-1.5">
                 <Label>How is this service hosted?</Label>
-                <Select value={hostingType} onValueChange={v => setHostingType(v as HostingType)}>
+                <Select value={hostingType} onValueChange={v => { setHostingType(v as HostingType); setCtid('') }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="lxc">LXC container (Docker inside)</SelectItem>
+                    <SelectItem value="lxc">LXC on Proxmox</SelectItem>
                     <SelectItem value="vm">Virtual machine</SelectItem>
-                    <SelectItem value="virtualhost">Virtualisation host (directly)</SelectItem>
+                    <SelectItem value="virtualhost">Directly on Proxmox host</SelectItem>
                     <SelectItem value="device">Physical device</SelectItem>
                     <SelectItem value="none">Unassigned</SelectItem>
                   </SelectContent>
@@ -364,17 +368,48 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
               </div>
 
               {hostingType === 'lxc' && (
-                <HostDropdown label="LXC container" items={lxcs} value={lxcId} onChange={setLxcId} />
+                <>
+                  <HostDropdown label="Proxmox host" items={virtualHosts} value={virtualHostId} onChange={setVirtualHostId} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Container ID (CT)</Label>
+                      <Input value={ctid} onChange={e => setCtid(e.target.value)} placeholder="101" className="font-mono" />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHasDocker(v => !v)}
+                    className={cn(
+                      'flex items-center gap-3 w-full px-4 py-3 rounded-xl border text-left transition-colors',
+                      hasDocker ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-white/[0.03]'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0',
+                      hasDocker ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                    )}>
+                      {hasDocker && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Runs Docker</p>
+                      <p className="text-xs text-muted-foreground">Service runs inside a Docker container on this LXC</p>
+                    </div>
+                  </button>
+                </>
               )}
+
               {hostingType === 'vm' && (
                 <HostDropdown label="Virtual machine" items={vms} value={vmId} onChange={setVmId} />
               )}
+
               {hostingType === 'virtualhost' && (
-                <HostDropdown label="Virtualisation host" items={virtualHosts} value={virtualHostId} onChange={setVirtualHostId} />
+                <HostDropdown label="Proxmox / virtualisation host" items={virtualHosts} value={virtualHostId} onChange={setVirtualHostId} />
               )}
+
               {hostingType === 'device' && (
                 <HostDropdown label="Physical device" items={devices} value={deviceId} onChange={setDeviceId} />
               )}
+
               {hostingType === 'none' && (
                 <p className="text-sm text-muted-foreground">Service will show as Unassigned.</p>
               )}
@@ -401,7 +436,6 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                 </div>
               </div>
 
-              {/* Docker Compose with auto-parse */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>Docker Compose</Label>
@@ -411,7 +445,6 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                         type="button"
                         onClick={applyParsedCompose}
                         className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-                        title="Extract image, ports, volumes and env vars from the compose file"
                       >
                         <Sparkles className="w-3 h-3" />
                         Auto-fill from compose

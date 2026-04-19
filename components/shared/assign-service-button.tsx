@@ -10,7 +10,7 @@ import { Link2 } from 'lucide-react'
 
 interface Props {
   // The ID and field name to set on the service
-  relationField: 'dockerHostId' | 'lxcId' | 'vmId' | 'virtualHostId' | 'deviceId'
+  relationField: 'vmId' | 'virtualHostId' | 'deviceId'
   relationId: string
   label: string // e.g. "this LXC"
 }
@@ -39,7 +39,7 @@ export function AssignServiceButton({ relationField, relationId, label }: Props)
     setError('')
     try {
       const body: Record<string, string | null> = {
-        dockerHostId: null, lxcId: null, vmId: null, virtualHostId: null, deviceId: null,
+        vmId: null, virtualHostId: null, deviceId: null,
       }
       body[relationField] = relationId
       const res = await fetch(`/api/services/${selectedId}`, {

@@ -3,29 +3,27 @@ import { Header } from '@/components/layout/header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { VHOST_TYPE_LABELS, formatMB } from '@/lib/utils'
 import Link from 'next/link'
-import { Cpu, Server, Box, Container } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Cpu, Server, Container } from 'lucide-react'
 
 export const metadata = { title: 'Virtualisation' }
 
 export default async function VirtualisationPage() {
-  const [hosts, vms, lxcs] = await Promise.all([
+  const [hosts, vms] = await Promise.all([
     prisma.virtualHost.findMany({
       where: { archived: false },
       include: {
         device: { select: { id: true, name: true } },
         vms: { select: { id: true, name: true, status: true } },
-        lxcs: { select: { id: true, name: true, status: true } },
+        services: { where: { archived: false }, select: { id: true, name: true, status: true, ctid: true, hasDocker: true } },
       },
       orderBy: [{ favourite: 'desc' }, { name: 'asc' }],
     }),
     prisma.vM.findMany({ where: { archived: false }, include: { host: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
-    prisma.lXC.findMany({ where: { archived: false }, include: { host: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
   ])
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Virtualisation" description={`${hosts.length} hosts · ${vms.length} VMs · ${lxcs.length} LXCs`} />
+      <Header title="Virtualisation" description={`${hosts.length} hosts · ${vms.length} VMs`} />
 
       <div className="page-container animate-fade-in space-y-8">
         {/* Hosts */}
@@ -50,8 +48,8 @@ export default async function VirtualisationPage() {
                 </div>
                 {host.ip && <p className="text-xs font-mono text-muted-foreground">{host.ip}</p>}
                 <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span>{host.vms.length} VMs</span>
-                  <span>{host.lxcs.length} LXCs</span>
+                  <span>{host.vms.length} VM{host.vms.length !== 1 ? 's' : ''}</span>
+                  <span>{host.services.length} service{host.services.length !== 1 ? 's' : ''}</span>
                 </div>
               </Link>
             ))}
@@ -107,50 +105,42 @@ export default async function VirtualisationPage() {
           ) : <p className="text-sm text-muted-foreground">No VMs yet.</p>}
         </section>
 
-        {/* LXCs */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Box className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">LXC Containers</h2>
-            <span className="text-xs text-muted-foreground ml-1">{lxcs.length}</span>
-          </div>
-          {lxcs.length > 0 ? (
-            <div className="section-card overflow-hidden p-0">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                    <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Status</th>
-                    <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Host</th>
-                    <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden xl:table-cell">IP</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {lxcs.map(lxc => (
-                    <tr key={lxc.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/virtualisation/lxcs/${lxc.id}`} className="text-sm font-medium hover:text-primary transition-colors">{lxc.name}</Link>
-                          {lxc.ctid && <span className="text-xs text-muted-foreground font-mono">CT{lxc.ctid}</span>}
-                          {lxc.hasDocker && (
-                            <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                              <Container className="w-2.5 h-2.5" />Docker
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5 hidden md:table-cell"><StatusBadge status={lxc.status} /></td>
-                      <td className="px-5 py-3.5 hidden lg:table-cell">
-                        <Link href={`/virtualisation/hosts/${lxc.host.id}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{lxc.host.name}</Link>
-                      </td>
-                      <td className="px-5 py-3.5 hidden xl:table-cell"><span className="text-sm font-mono text-muted-foreground">{lxc.ip ?? '—'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Services on Proxmox hosts (LXCs) */}
+        {hosts.some(h => h.services.length > 0) && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Container className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold">Services by Host</h2>
             </div>
-          ) : <p className="text-sm text-muted-foreground">No LXCs yet.</p>}
-        </section>
+            {hosts.filter(h => h.services.length > 0).map(host => (
+              <div key={host.id} className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">{host.name}</p>
+                <div className="section-card overflow-hidden p-0">
+                  <table className="w-full">
+                    <tbody className="divide-y divide-border">
+                      {host.services.map(svc => (
+                        <tr key={svc.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-5 py-3">
+                            <Link href={`/services/${svc.id}`} className="text-sm font-medium hover:text-primary transition-colors">
+                              {svc.name}
+                            </Link>
+                            {svc.ctid && <span className="ml-2 text-xs text-muted-foreground font-mono">CT{svc.ctid}</span>}
+                            {svc.hasDocker && (
+                              <span className="ml-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <Container className="w-2.5 h-2.5" />Docker
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3"><StatusBadge status={svc.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
 
       </div>
     </div>

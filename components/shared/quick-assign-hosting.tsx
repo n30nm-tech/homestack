@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link2, ChevronDown } from 'lucide-react'
+import { Link2, Check } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 interface NamedItem { id: string; name: string; ip?: string | null }
 
@@ -15,10 +17,11 @@ type HostingType = 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
 interface Props {
   serviceId: string
   current: {
-    lxcId: string | null
     vmId: string | null
     virtualHostId: string | null
     deviceId: string | null
+    ctid: string | null
+    hasDocker: boolean
   }
 }
 
@@ -27,38 +30,41 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const [type, setType] = useState<HostingType>(
-    current.lxcId ? 'lxc' :
-    current.vmId ? 'vm' :
-    current.virtualHostId ? 'virtualhost' :
-    current.deviceId ? 'device' : 'none'
-  )
-  const [selectedId, setSelectedId] = useState(
-    current.lxcId ?? current.vmId ?? current.virtualHostId ?? current.deviceId ?? ''
-  )
+  function detectType(): HostingType {
+    if (current.virtualHostId && current.ctid) return 'lxc'
+    if (current.vmId) return 'vm'
+    if (current.virtualHostId) return 'virtualhost'
+    if (current.deviceId) return 'device'
+    return 'none'
+  }
 
-  const [lxcs, setLxcs]         = useState<NamedItem[]>([])
-  const [vms, setVms]           = useState<NamedItem[]>([])
-  const [hosts, setHosts]       = useState<NamedItem[]>([])
-  const [devices, setDevices]   = useState<NamedItem[]>([])
+  const [type, setType] = useState<HostingType>(detectType())
+  const [selectedId, setSelectedId] = useState(
+    current.virtualHostId ?? current.vmId ?? current.deviceId ?? ''
+  )
+  const [ctid, setCtid] = useState(current.ctid ?? '')
+  const [hasDocker, setHasDocker] = useState(current.hasDocker)
+
+  const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
+  const [vms, setVms] = useState<NamedItem[]>([])
+  const [devices, setDevices] = useState<NamedItem[]>([])
 
   useEffect(() => {
     if (!open) return
     Promise.all([
-      fetch('/api/virtualisation/lxcs').then(r => r.json()),
-      fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/virtualisation/hosts').then(r => r.json()),
+      fetch('/api/virtualisation/vms').then(r => r.json()),
       fetch('/api/devices').then(r => r.json()),
-    ]).then(([l, v, h, d]) => {
-      setLxcs(l); setVms(v); setHosts(h); setDevices(d)
+    ]).then(([vh, vm, d]) => {
+      setVirtualHosts(vh); setVms(vm); setDevices(d)
     }).catch(() => {})
   }, [open])
 
   function itemsForType(): NamedItem[] {
     switch (type) {
-      case 'lxc':        return lxcs
+      case 'lxc':        return virtualHosts
       case 'vm':         return vms
-      case 'virtualhost':return hosts
+      case 'virtualhost':return virtualHosts
       case 'device':     return devices
       default:           return []
     }
@@ -66,23 +72,36 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
 
   async function save() {
     setSaving(true)
+    const body: Record<string, string | boolean | null> = {
+      virtualHostId: null,
+      vmId: null,
+      deviceId: null,
+      ctid: null,
+      hasDocker: false,
+    }
+    if (type === 'lxc') {
+      body.virtualHostId = selectedId || null
+      body.ctid = ctid || null
+      body.hasDocker = hasDocker
+    } else if (type === 'vm') {
+      body.vmId = selectedId || null
+    } else if (type === 'virtualhost') {
+      body.virtualHostId = selectedId || null
+    } else if (type === 'device') {
+      body.deviceId = selectedId || null
+    }
+
     await fetch(`/api/services/${serviceId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lxcId:         type === 'lxc'         ? selectedId || null : null,
-        vmId:          type === 'vm'          ? selectedId || null : null,
-        virtualHostId: type === 'virtualhost' ? selectedId || null : null,
-        deviceId:      type === 'device'      ? selectedId || null : null,
-        dockerHostId:  null,
-      }),
+      body: JSON.stringify(body),
     })
     setSaving(false)
     setOpen(false)
     router.refresh()
   }
 
-  const isAssigned = !!(current.lxcId || current.vmId || current.virtualHostId || current.deviceId)
+  const isAssigned = !!(current.vmId || current.virtualHostId || current.deviceId)
 
   return (
     <>
@@ -103,12 +122,12 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
               <Label>Hosted on</Label>
-              <Select value={type} onValueChange={v => { setType(v as HostingType); setSelectedId('') }}>
+              <Select value={type} onValueChange={v => { setType(v as HostingType); setSelectedId(''); setCtid('') }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="lxc">LXC container</SelectItem>
+                  <SelectItem value="lxc">LXC on Proxmox</SelectItem>
                   <SelectItem value="vm">Virtual machine</SelectItem>
-                  <SelectItem value="virtualhost">Virtualisation host</SelectItem>
+                  <SelectItem value="virtualhost">Directly on Proxmox host</SelectItem>
                   <SelectItem value="device">Physical device</SelectItem>
                   <SelectItem value="none">Unassigned</SelectItem>
                 </SelectContent>
@@ -118,7 +137,7 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
             {type !== 'none' && (
               <div className="space-y-1.5">
                 <Label>
-                  {type === 'lxc' ? 'LXC' : type === 'vm' ? 'VM' : type === 'virtualhost' ? 'Host' : 'Device'}
+                  {type === 'lxc' ? 'Proxmox host' : type === 'vm' ? 'VM' : type === 'virtualhost' ? 'Host' : 'Device'}
                 </Label>
                 {itemsForType().length === 0 ? (
                   <p className="text-xs text-muted-foreground">None added yet.</p>
@@ -135,6 +154,31 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
                   </Select>
                 )}
               </div>
+            )}
+
+            {type === 'lxc' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>Container ID (CT)</Label>
+                  <Input value={ctid} onChange={e => setCtid(e.target.value)} placeholder="101" className="font-mono" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHasDocker(v => !v)}
+                  className={cn(
+                    'flex items-center gap-3 w-full px-4 py-3 rounded-xl border text-left transition-colors',
+                    hasDocker ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-white/[0.03]'
+                  )}
+                >
+                  <div className={cn(
+                    'w-5 h-5 rounded flex items-center justify-center border-2 transition-colors shrink-0',
+                    hasDocker ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                  )}>
+                    {hasDocker && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <p className="text-sm font-medium">Runs Docker</p>
+                </button>
+              </>
             )}
           </div>
 

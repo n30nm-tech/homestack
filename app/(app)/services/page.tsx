@@ -22,8 +22,6 @@ export default async function ServicesPage() {
       device: { select: { id: true, name: true } },
       virtualHost: { select: { id: true, name: true } },
       vm: { select: { id: true, name: true } },
-      lxc: { select: { id: true, name: true } },
-      dockerHost: { select: { id: true, name: true } },
     },
     orderBy: [{ favourite: 'desc' }, { name: 'asc' }],
   })

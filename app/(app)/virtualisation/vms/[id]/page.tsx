@@ -21,7 +21,6 @@ export default async function VMDetailPage(props: { params: Promise<{ id: string
       host: true,
       tags: true,
       services: { select: { id: true, name: true, status: true, url: true } },
-      dockerHosts: true,
       backupJobs: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
     },
@@ -61,20 +60,6 @@ export default async function VMDetailPage(props: { params: Promise<{ id: string
                 <div key={svc.id} className="flex items-center gap-3">
                   <Link href={`/services/${svc.id}`} className="text-sm hover:text-primary transition-colors">{svc.name}</Link>
                   <StatusBadge status={svc.status} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {vm.dockerHosts.length > 0 && (
-          <div className="section-card space-y-4">
-            <h2 className="text-sm font-semibold">Docker Hosts</h2>
-            <div className="space-y-2">
-              {vm.dockerHosts.map(dh => (
-                <div key={dh.id} className="flex items-center gap-3">
-                  <Link href={`/virtualisation/docker/${dh.id}`} className="text-sm hover:text-primary transition-colors">{dh.name}</Link>
-                  <StatusBadge status={dh.status} />
                 </div>
               ))}
             </div>

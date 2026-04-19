@@ -9,7 +9,7 @@ import { Status } from '@prisma/client'
 
 interface SearchResult {
   id: string
-  type: 'service' | 'device' | 'vm' | 'lxc' | 'virtualHost' | 'dockerHost' | 'vlan' | 'dns' | 'proxy' | 'backup' | 'doc'
+  type: 'service' | 'device' | 'vm' | 'virtualHost' | 'vlan' | 'dns' | 'proxy' | 'backup' | 'doc'
   name: string
   subtitle?: string
   status?: Status
@@ -20,9 +20,7 @@ const TYPE_ICONS: Record<SearchResult['type'], React.ElementType> = {
   service: Boxes,
   device: Server,
   vm: Cpu,
-  lxc: Cpu,
   virtualHost: Cpu,
-  dockerHost: Cpu,
   vlan: Network,
   dns: Network,
   proxy: Network,
@@ -34,9 +32,7 @@ const TYPE_LABELS: Record<SearchResult['type'], string> = {
   service: 'Service',
   device: 'Device',
   vm: 'VM',
-  lxc: 'LXC',
   virtualHost: 'Host',
-  dockerHost: 'Docker Host',
   vlan: 'VLAN',
   dns: 'DNS',
   proxy: 'Reverse Proxy',

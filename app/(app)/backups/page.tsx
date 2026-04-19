@@ -13,23 +13,19 @@ export default async function BackupsPage() {
       service: { select: { id: true, name: true } },
       device: { select: { id: true, name: true } },
       vm: { select: { id: true, name: true } },
-      lxc: { select: { id: true, name: true } },
-      dockerHost: { select: { id: true, name: true } },
       virtualHost: { select: { id: true, name: true } },
     },
     orderBy: { name: 'asc' },
   })
 
   function getSourceName(job: typeof jobs[0]) {
-    return job.service?.name ?? job.device?.name ?? job.vm?.name ?? job.lxc?.name ?? job.dockerHost?.name ?? job.virtualHost?.name ?? '—'
+    return job.service?.name ?? job.device?.name ?? job.vm?.name ?? job.virtualHost?.name ?? '—'
   }
 
   function getSourceHref(job: typeof jobs[0]) {
     if (job.service) return `/services/${job.service.id}`
     if (job.device) return `/devices/${job.device.id}`
     if (job.vm) return `/virtualisation/vms/${job.vm.id}`
-    if (job.lxc) return `/virtualisation/lxcs/${job.lxc.id}`
-    if (job.dockerHost) return `/virtualisation/docker/${job.dockerHost.id}`
     if (job.virtualHost) return `/virtualisation/hosts/${job.virtualHost.id}`
     return null
   }
