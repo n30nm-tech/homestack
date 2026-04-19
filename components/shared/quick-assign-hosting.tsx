@@ -20,7 +20,7 @@ interface Props {
     vmId: string | null
     virtualHostId: string | null
     deviceId: string | null
-    ctid: string | null
+    containerId: string | null
     hasDocker: boolean
   }
 }
@@ -31,7 +31,7 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
   const [saving, setSaving] = useState(false)
 
   function detectType(): HostingType {
-    if (current.virtualHostId && current.ctid) return 'lxc'
+    if (current.virtualHostId && current.containerId) return 'lxc'
     if (current.vmId) return 'vm'
     if (current.virtualHostId) return 'virtualhost'
     if (current.deviceId) return 'device'
@@ -42,7 +42,7 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
   const [selectedId, setSelectedId] = useState(
     current.virtualHostId ?? current.vmId ?? current.deviceId ?? ''
   )
-  const [ctid, setCtid] = useState(current.ctid ?? '')
+  const [containerId, setContainerId] = useState(current.containerId ?? '')
   const [hasDocker, setHasDocker] = useState(current.hasDocker)
 
   const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
@@ -76,12 +76,12 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
       virtualHostId: null,
       vmId: null,
       deviceId: null,
-      ctid: null,
+      containerId: null,
       hasDocker: false,
     }
     if (type === 'lxc') {
       body.virtualHostId = selectedId || null
-      body.ctid = ctid || null
+      body.containerId = containerId || null
       body.hasDocker = hasDocker
     } else if (type === 'vm') {
       body.vmId = selectedId || null
@@ -122,7 +122,7 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
               <Label>Hosted on</Label>
-              <Select value={type} onValueChange={v => { setType(v as HostingType); setSelectedId(''); setCtid('') }}>
+              <Select value={type} onValueChange={v => { setType(v as HostingType); setSelectedId(''); setContainerId('') }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="lxc">LXC on Proxmox</SelectItem>
@@ -160,7 +160,7 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
               <>
                 <div className="space-y-1.5">
                   <Label>Container ID (CT)</Label>
-                  <Input value={ctid} onChange={e => setCtid(e.target.value)} placeholder="101" className="font-mono" />
+                  <Input value={containerId} onChange={e => setContainerId(e.target.value)} placeholder="101" className="font-mono" />
                 </div>
                 <button
                   type="button"

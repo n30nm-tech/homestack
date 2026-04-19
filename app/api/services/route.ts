@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       category: body.category || null,
       status: (body.status as Status) || 'UNKNOWN',
       icon: body.icon || null,
-      ctid: body.ctid || null,
+      containerId: body.containerId || null,
       hasDocker: body.hasDocker === true || body.hasDocker === 'true',
       containerImage:  body.containerImage  || null,
       stackFolder:     body.stackFolder     || null,

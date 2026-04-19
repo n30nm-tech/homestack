@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       favourite: typeof body.favourite === 'boolean' ? body.favourite : current.favourite,
       archived: typeof body.archived === 'boolean' ? body.archived : current.archived,
       icon: 'icon' in body ? (body.icon || null) : current.icon,
-      ctid: 'ctid' in body ? (body.ctid || null) : current.ctid,
+      containerId: 'containerId' in body ? (body.containerId || null) : current.containerId,
       hasDocker: typeof body.hasDocker === 'boolean' ? body.hasDocker : current.hasDocker,
       deviceId: 'deviceId' in body ? (body.deviceId || null) : current.deviceId,
       virtualHostId: 'virtualHostId' in body ? (body.virtualHostId || null) : current.virtualHostId,

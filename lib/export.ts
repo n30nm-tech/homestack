@@ -24,7 +24,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
     await Promise.all([
       prisma.service.findMany({ where: { archived: false }, include: { tags: true, device: true, virtualHost: true, vm: true, reverseProxies: true, backupJobs: true }, orderBy: { name: 'asc' } }),
       prisma.device.findMany({ where: { archived: false }, include: { tags: true }, orderBy: { name: 'asc' } }),
-      prisma.virtualHost.findMany({ where: { archived: false }, include: { tags: true, device: true, vms: true, services: { where: { archived: false }, select: { name: true, ctid: true } } }, orderBy: { name: 'asc' } }),
+      prisma.virtualHost.findMany({ where: { archived: false }, include: { tags: true, device: true, vms: true, services: { where: { archived: false }, select: { name: true, containerId: true } } }, orderBy: { name: 'asc' } }),
       prisma.vM.findMany({ where: { archived: false }, include: { tags: true, host: true }, orderBy: { name: 'asc' } }),
       prisma.vLAN.findMany({ where: { archived: false }, orderBy: { vlanId: 'asc' } }),
       prisma.dNSRecord.findMany({ where: { archived: false }, include: { service: true }, orderBy: { recordName: 'asc' } }),
@@ -58,7 +58,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (s.url) lines.push(md('URL', s.url))
     if (s.ip || s.port) lines.push(md('Endpoint', `${s.ip ?? ''}${s.port ? `:${s.port}` : ''}`))
     if (s.category) lines.push(md('Category', s.category))
-    if (s.ctid) lines.push(md('Container ID', `CT${s.ctid}`))
+    if (s.containerId) lines.push(md('Container ID', `CT${s.containerId}`))
     if (s.hasDocker) lines.push(md('Runtime', 'Docker'))
 
     if (s.vm) lines.push(md('Hosted on', `VM: ${s.vm.name}`))
@@ -107,7 +107,7 @@ export async function generateFullMarkdownExport(): Promise<string> {
     if (h.os) lines.push(md('OS', h.os))
     if (h.device) lines.push(md('Physical host', h.device.name))
     lines.push(md('VMs', h.vms.map(v => v.name).join(', ') || 'None'))
-    lines.push(md('Services', h.services.map(s => s.ctid ? `${s.name} (CT${s.ctid})` : s.name).join(', ') || 'None'))
+    lines.push(md('Services', h.services.map(s => s.containerId ? `${s.name} (CT${s.containerId})` : s.name).join(', ') || 'None'))
     if (h.notes) lines.push(mdSection('Notes', h.notes))
     lines.push('\n')
   }
@@ -206,7 +206,7 @@ export async function generateServiceMarkdown(id: string): Promise<string> {
   if (s.url) lines.push(md('URL', s.url))
   if (s.ip || s.port) lines.push(md('Endpoint', `${s.ip ?? ''}${s.port ? `:${s.port}` : ''}`))
   if (s.category) lines.push(md('Category', s.category))
-  if (s.ctid) lines.push(md('Container ID', `CT${s.ctid}`))
+  if (s.containerId) lines.push(md('Container ID', `CT${s.containerId}`))
   if (s.hasDocker) lines.push(md('Runtime', 'Docker'))
   if (s.vm) lines.push(md('VM', s.vm.name))
   if (s.virtualHost) lines.push(md('Host', s.virtualHost.name))

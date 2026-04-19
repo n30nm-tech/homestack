@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       tags: true,
       device: true,
       vms: { include: { services: { select: { id: true, name: true, status: true } } } },
-      services: { select: { id: true, name: true, status: true, ctid: true, hasDocker: true } },
+      services: { select: { id: true, name: true, status: true, containerId: true, hasDocker: true } },
       backupJobs: true,
       attachments: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 20 },

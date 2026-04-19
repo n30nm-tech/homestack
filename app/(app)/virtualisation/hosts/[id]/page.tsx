@@ -23,7 +23,7 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
       device: true,
       tags: true,
       vms: { include: { services: { select: { id: true, name: true, status: true } } } },
-      services: { where: { archived: false }, select: { id: true, name: true, status: true, ctid: true, hasDocker: true } },
+      services: { where: { archived: false }, select: { id: true, name: true, status: true, containerId: true, hasDocker: true } },
       backupJobs: true,
       auditLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
     },
@@ -76,7 +76,7 @@ export default async function HostDetailPage(props: { params: Promise<{ id: stri
               {host.services.map(svc => (
                 <div key={svc.id} className="flex items-center gap-3">
                   <Link href={`/services/${svc.id}`} className="text-sm hover:text-primary transition-colors">{svc.name}</Link>
-                  {svc.ctid && <span className="text-xs text-muted-foreground font-mono">CT{svc.ctid}</span>}
+                  {svc.containerId && <span className="text-xs text-muted-foreground font-mono">CT{svc.containerId}</span>}
                   {svc.hasDocker && (
                     <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                       <Container className="w-2.5 h-2.5" />Docker

@@ -122,13 +122,13 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
             <h2 className="text-sm font-semibold">Hosting</h2>
             <QuickAssignHosting
               serviceId={service.id}
-              current={{ vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId, ctid: service.ctid, hasDocker: service.hasDocker }}
+              current={{ vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId, containerId: service.containerId, hasDocker: service.hasDocker }}
             />
           </div>
           <DetailGrid>
             <DetailField label="Hosted on" value={getHostingSummary(service)} />
-            {service.ctid && (
-              <DetailField label="Container ID" value={`CT${service.ctid}`} mono />
+            {service.containerId && (
+              <DetailField label="Container ID" value={`CT${service.containerId}`} mono />
             )}
             {service.virtualHost && (
               <DetailField label="Proxmox host" value={

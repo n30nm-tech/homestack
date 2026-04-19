@@ -28,7 +28,7 @@ interface ServiceEditFormProps {
     favourite: boolean
     archived: boolean
     icon: string | null
-    ctid: string | null
+    containerId: string | null
     hasDocker: boolean
     containerImage: string | null
     stackFolder: string | null
@@ -53,7 +53,7 @@ interface ServiceEditFormProps {
 type HostingType = 'lxc' | 'vm' | 'virtualhost' | 'device' | 'none'
 
 function detectHostingType(svc: ServiceEditFormProps['service']): HostingType {
-  if (svc.virtualHostId && svc.ctid) return 'lxc'
+  if (svc.virtualHostId && svc.containerId) return 'lxc'
   if (svc.vmId) return 'vm'
   if (svc.virtualHostId) return 'virtualhost'
   if (svc.deviceId) return 'device'
@@ -132,7 +132,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
   const [virtualHostId, setVirtualHostId] = useState(service.virtualHostId ?? '')
   const [vmId, setVmId] = useState(service.vmId ?? '')
   const [deviceId, setDeviceId] = useState(service.deviceId ?? '')
-  const [ctid, setCtid] = useState(service.ctid ?? '')
+  const [containerId, setContainerId] = useState(service.containerId ?? '')
   const [hasDocker, setHasDocker] = useState(service.hasDocker)
 
   const [virtualHosts, setVirtualHosts] = useState<NamedItem[]>([])
@@ -198,22 +198,22 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
     if (hostingType === 'lxc') {
       return {
         virtualHostId: virtualHostId || null,
-        ctid: ctid || null,
+        containerId: containerId || null,
         hasDocker,
         vmId: null,
         deviceId: null,
       }
     }
     if (hostingType === 'vm') {
-      return { vmId: vmId || null, virtualHostId: null, ctid: null, hasDocker: false, deviceId: null }
+      return { vmId: vmId || null, virtualHostId: null, containerId: null, hasDocker: false, deviceId: null }
     }
     if (hostingType === 'virtualhost') {
-      return { virtualHostId: virtualHostId || null, ctid: null, hasDocker: false, vmId: null, deviceId: null }
+      return { virtualHostId: virtualHostId || null, containerId: null, hasDocker: false, vmId: null, deviceId: null }
     }
     if (hostingType === 'device') {
-      return { deviceId: deviceId || null, virtualHostId: null, ctid: null, hasDocker: false, vmId: null }
+      return { deviceId: deviceId || null, virtualHostId: null, containerId: null, hasDocker: false, vmId: null }
     }
-    return { virtualHostId: null, ctid: null, hasDocker: false, vmId: null, deviceId: null }
+    return { virtualHostId: null, containerId: null, hasDocker: false, vmId: null, deviceId: null }
   }
 
   async function save() {
@@ -355,7 +355,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
             <TabsContent value="hosting" className="space-y-4 mt-4">
               <div className="space-y-1.5">
                 <Label>How is this service hosted?</Label>
-                <Select value={hostingType} onValueChange={v => { setHostingType(v as HostingType); setCtid('') }}>
+                <Select value={hostingType} onValueChange={v => { setHostingType(v as HostingType); setContainerId('') }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="lxc">LXC on Proxmox</SelectItem>
@@ -373,7 +373,7 @@ export function ServiceEditForm({ service }: ServiceEditFormProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Container ID (CT)</Label>
-                      <Input value={ctid} onChange={e => setCtid(e.target.value)} placeholder="101" className="font-mono" />
+                      <Input value={containerId} onChange={e => setContainerId(e.target.value)} placeholder="101" className="font-mono" />
                     </div>
                   </div>
                   <button

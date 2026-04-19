@@ -182,7 +182,7 @@ model Service {
   icon                 String?
 
   // Container identity (when running in an LXC on Proxmox)
-  ctid                 String?      // e.g. "101"
+  containerId                 String?      // e.g. "101"
   hasDocker            Boolean      @default(false)
 
   // Hosting location (only one should be set)

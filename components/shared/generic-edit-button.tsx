@@ -53,7 +53,7 @@ const FIELD_LABELS: Record<string, string> = {
   notes: 'Notes', setupNotes: 'Setup Notes',
   troubleshootingNotes: 'Troubleshooting', extraInfo: 'Extra Info',
   content: 'Content', description: 'Description',
-  vmid: 'VM ID', ctid: 'CT ID', title: 'Title',
+  vmid: 'VM ID', containerId: 'CT ID', title: 'Title',
   schedule: 'Schedule', retention: 'Retention',
   destination: 'Destination', backupType: 'Backup Type', tool: 'Tool',
   recordName: 'Record Name', domain: 'Domain',
@@ -65,7 +65,7 @@ const FIELD_LABELS: Record<string, string> = {
 // Fields that sit side-by-side in a 2-column grid
 const COMPACT_FIELDS = new Set([
   'name','hostname','ip','os','version','cpu','ram','disk','storage',
-  'vmid','ctid','title','schedule','retention','destination','backupType',
+  'vmid','containerId','title','schedule','retention','destination','backupType',
   'tool','recordName','domain','subnet','gateway','purpose','vlanId',
   'targetIp','targetPort','status','dockerDataPath',
 ])
@@ -218,7 +218,7 @@ export function GenericEditButton({ id, apiPath, redirectPath, label, currentDat
       )
     }
     const isMono = field === 'hostname' || field === 'ip' || field === 'os' ||
-      field === 'vmid' || field === 'ctid' || field === 'subnet' ||
+      field === 'vmid' || field === 'containerId' || field === 'subnet' ||
       field === 'gateway' || field === 'targetIp' || field === 'recordName' ||
       field === 'dockerDataPath'
     return (

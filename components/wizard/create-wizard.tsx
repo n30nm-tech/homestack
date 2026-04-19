@@ -252,7 +252,7 @@ function GuidedServiceFlow({
   const [host, setHost]         = useState<SlotValue>(emptySlot())
   const [vm, setVm]             = useState<SlotValue>(emptySlot())
   const [device, setDevice]     = useState<SlotValue>(emptySlot())
-  const [service, setService]       = useState({ name: '', url: '', status: 'ACTIVE', category: '', ctid: '', hasDocker: true })
+  const [service, setService]       = useState({ name: '', url: '', status: 'ACTIVE', category: '', containerId: '', hasDocker: true })
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
 
@@ -312,11 +312,11 @@ function GuidedServiceFlow({
       }
 
       // 4. Create service
-      const { ctid, hasDocker, ...svcRest } = service
+      const { containerId, hasDocker, ...svcRest } = service
       const svcBody: Record<string, string | boolean | null> = { ...svcRest }
       if (runtime === 'lxc' && hostId) {
         svcBody.virtualHostId = hostId
-        svcBody.ctid = ctid || null
+        svcBody.containerId = containerId || null
         svcBody.hasDocker = hasDocker
       } else if (vmId) {
         svcBody.vmId = vmId
@@ -475,7 +475,7 @@ function GuidedServiceFlow({
             <>
               <div className="space-y-1.5">
                 <Label>Container ID (CT) — optional</Label>
-                <Input placeholder="101" value={service.ctid} onChange={e => setService(s => ({ ...s, ctid: e.target.value }))} className="font-mono" />
+                <Input placeholder="101" value={service.containerId} onChange={e => setService(s => ({ ...s, containerId: e.target.value }))} className="font-mono" />
               </div>
               <button
                 type="button"

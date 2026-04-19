@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       tags: true,
       device: { select: { id: true, name: true } },
       vms: { select: { id: true, name: true, status: true } },
-      services: { select: { id: true, name: true, status: true, ctid: true } },
+      services: { select: { id: true, name: true, status: true, containerId: true } },
     },
     orderBy: [{ favourite: 'desc' }, { name: 'asc' }],
   })
