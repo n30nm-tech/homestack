@@ -8,6 +8,7 @@ import { CodeBlock } from '@/components/shared/code-block'
 import { CollapsibleSection } from '@/components/shared/collapsible-section'
 import { ServiceEditForm } from './service-edit-form'
 import { ServiceImportDialog } from './service-import-dialog'
+import { QuickAssignHosting } from '@/components/shared/quick-assign-hosting'
 import { formatDateTime, getHostingSummary, ensureUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { ExternalLink, Star, Download } from 'lucide-react'
@@ -116,16 +117,15 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
 
         {/* Hosting */}
         <div className="section-card space-y-5">
-          <h2 className="text-sm font-semibold">Hosting</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Hosting</h2>
+            <QuickAssignHosting
+              serviceId={service.id}
+              current={{ lxcId: service.lxcId, vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId }}
+            />
+          </div>
           <DetailGrid>
             <DetailField label="Hosted on" value={getHostingSummary(service)} />
-            {service.dockerHost && (
-              <DetailField label="Docker host" value={
-                <Link href={`/virtualisation/docker/${service.dockerHost.id}`} className="text-primary hover:underline text-sm">
-                  {service.dockerHost.name}
-                </Link>
-              } />
-            )}
             {service.lxc && (
               <DetailField label="LXC" value={
                 <Link href={`/virtualisation/lxcs/${service.lxc.id}`} className="text-primary hover:underline text-sm">
