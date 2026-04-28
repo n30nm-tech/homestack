@@ -23,9 +23,10 @@ interface Props {
     containerId: string | null
     hasDocker: boolean
   }
+  buttonVariant?: 'default' | 'link'
 }
 
-export function QuickAssignHosting({ serviceId, current }: Props) {
+export function QuickAssignHosting({ serviceId, current, buttonVariant = 'link' }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -105,13 +106,20 @@ export function QuickAssignHosting({ serviceId, current }: Props) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-      >
-        <Link2 className="w-3 h-3" />
-        {isAssigned ? 'Reassign' : 'Assign hosting'}
-      </button>
+      {buttonVariant === 'default' ? (
+        <Button onClick={() => setOpen(true)}>
+          <Link2 className="w-4 h-4" />
+          Assign to host
+        </Button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+        >
+          <Link2 className="w-3 h-3" />
+          {isAssigned ? 'Reassign' : 'Assign hosting'}
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">

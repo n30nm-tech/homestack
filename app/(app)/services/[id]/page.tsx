@@ -125,33 +125,44 @@ export default async function ServiceDetailPage(props: { params: Promise<{ id: s
               current={{ vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId, containerId: service.containerId, hasDocker: service.hasDocker }}
             />
           </div>
-          <DetailGrid>
-            <DetailField label="Hosted on" value={getHostingSummary(service)} />
-            {service.containerId && (
-              <DetailField label="Container ID" value={`CT${service.containerId}`} mono />
-            )}
-            {service.virtualHost && (
-              <DetailField label="Proxmox host" value={
-                <Link href={`/virtualisation/hosts/${service.virtualHost.id}`} className="text-primary hover:underline text-sm">
-                  {service.virtualHost.name}
-                </Link>
-              } />
-            )}
-            {service.vm && (
-              <DetailField label="VM" value={
-                <Link href={`/virtualisation/vms/${service.vm.id}`} className="text-primary hover:underline text-sm">
-                  {service.vm.name} (VM{service.vm.vmid}) on {service.vm.host.name}
-                </Link>
-              } />
-            )}
-            {service.device && (
-              <DetailField label="Device" value={
-                <Link href={`/devices/${service.device.id}`} className="text-primary hover:underline text-sm">
-                  {service.device.name}
-                </Link>
-              } />
-            )}
-          </DetailGrid>
+          {!service.vmId && !service.virtualHostId && !service.deviceId ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <p className="text-sm text-muted-foreground">Not assigned to any host yet.</p>
+              <QuickAssignHosting
+                serviceId={service.id}
+                current={{ vmId: service.vmId, virtualHostId: service.virtualHostId, deviceId: service.deviceId, containerId: service.containerId, hasDocker: service.hasDocker }}
+                buttonVariant="default"
+              />
+            </div>
+          ) : (
+            <DetailGrid>
+              <DetailField label="Hosted on" value={getHostingSummary(service)} />
+              {service.containerId && (
+                <DetailField label="Container ID" value={`CT${service.containerId}`} mono />
+              )}
+              {service.virtualHost && (
+                <DetailField label="Proxmox host" value={
+                  <Link href={`/virtualisation/hosts/${service.virtualHost.id}`} className="text-primary hover:underline text-sm">
+                    {service.virtualHost.name}
+                  </Link>
+                } />
+              )}
+              {service.vm && (
+                <DetailField label="VM" value={
+                  <Link href={`/virtualisation/vms/${service.vm.id}`} className="text-primary hover:underline text-sm">
+                    {service.vm.name} (VM{service.vm.vmid}) on {service.vm.host.name}
+                  </Link>
+                } />
+              )}
+              {service.device && (
+                <DetailField label="Device" value={
+                  <Link href={`/devices/${service.device.id}`} className="text-primary hover:underline text-sm">
+                    {service.device.name}
+                  </Link>
+                } />
+              )}
+            </DetailGrid>
+          )}
         </div>
 
         {/* Linked items */}
