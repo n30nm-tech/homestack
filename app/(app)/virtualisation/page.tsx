@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { VHOST_TYPE_LABELS, formatMB } from '@/lib/utils'
 import Link from 'next/link'
 import { Cpu, Server, Container } from 'lucide-react'
+import { ProxmoxImportDialog } from '@/components/shared/proxmox-import-dialog'
 
 export const metadata = { title: 'Virtualisation' }
 
@@ -23,7 +24,7 @@ export default async function VirtualisationPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <Header title="Virtualisation" description={`${hosts.length} hosts · ${vms.length} VMs`} />
+      <Header title="Virtualisation" description={`${hosts.length} hosts · ${vms.length} VMs`} actions={<ProxmoxImportDialog />} />
 
       <div className="page-container animate-fade-in space-y-8">
         {/* Hosts */}
