@@ -20,12 +20,43 @@ def pvesh(path):
     except:
         return []
 
-def extract_ip(cfg):
+def extract_ip_from_cfg(cfg):
     if not isinstance(cfg, dict): return None
     for k, v in cfg.items():
         if (k.startswith("net") or k.startswith("ipconfig")) and "ip=" in str(v):
             m = re.search(r"ip=([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)", str(v))
             if m: return m.group(1)
+    return None
+
+def get_lxc_ip(node, ctid):
+    # Try live interfaces first (works when running)
+    ifaces = pvesh(f"/nodes/{node}/lxc/{ctid}/interfaces")
+    if isinstance(ifaces, list):
+        for iface in ifaces:
+            if isinstance(iface, dict) and iface.get("name","") != "lo":
+                for addr in iface.get("ip-addresses", []):
+                    ip = addr.get("ip-address","")
+                    if ip and not ip.startswith("127.") and ":" not in ip:
+                        return ip
+    return None
+
+def get_lxc_port(ctid, status):
+    if status != "running": return None
+    try:
+        r = subprocess.run(
+            ["pct","exec",str(ctid),"--","ss","-tlnp4"],
+            capture_output=True, text=True, timeout=6
+        )
+        skip = {"22","80","443","5355","53","2049","111"}
+        for line in r.stdout.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) < 4: continue
+            addr = parts[3]
+            port = addr.rsplit(":",1)[-1]
+            if port.isdigit() and port not in skip:
+                return int(port)
+    except:
+        pass
     return None
 
 nodes_raw = pvesh("/nodes")
@@ -50,18 +81,22 @@ for n in nodes_raw:
             "cpu":  v.get("cpus"),
             "ram":  round(v["maxmem"]/1048576)  if v.get("maxmem")  else None,
             "disk": round(v["maxdisk"]/1073741824) if v.get("maxdisk") else None,
-            "ip":   extract_ip(cfg),
+            "ip":   extract_ip_from_cfg(cfg),
         })
 
     lxcs = []
     for l in lxcs_l:
-        cfg = pvesh(f"/nodes/{node}/lxc/{l['vmid']}/config")
+        ctid = l["vmid"]
+        cfg      = pvesh(f"/nodes/{node}/lxc/{ctid}/config")
         features = cfg.get("features","") if isinstance(cfg,dict) else ""
+        lxc_ip   = get_lxc_ip(node, ctid) or extract_ip_from_cfg(cfg)
+        lxc_port = get_lxc_port(ctid, l["status"])
         lxcs.append({
-            "ctid":      str(l["vmid"]), "name": l["name"], "status": l["status"],
+            "ctid":      str(ctid), "name": l["name"], "status": l["status"],
             "cpu":       l.get("cpus"),
             "ram":       round(l["maxmem"]/1048576) if l.get("maxmem") else None,
-            "ip":        extract_ip(cfg),
+            "ip":        lxc_ip,
+            "port":      lxc_port,
             "hasDocker": "nesting=1" in str(features),
         })
 
@@ -83,7 +118,7 @@ PYEOF`
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ScanLxc  { ctid: string; name: string; status: string; cpu?: number | null; ram?: number | null; ip?: string | null; hasDocker?: boolean }
+interface ScanLxc  { ctid: string; name: string; status: string; cpu?: number | null; ram?: number | null; ip?: string | null; port?: number | null; hasDocker?: boolean }
 interface ScanVm   { vmid: string; name: string; status: string; cpu?: number | null; ram?: number | null; disk?: number | null; ip?: string | null }
 interface ScanNode { name: string; ip?: string | null; version?: string | null; cpu?: number | null; ram?: number | null; vms: ScanVm[]; lxcs: ScanLxc[] }
 interface ScanResult { version: number; nodes: ScanNode[] }
@@ -154,6 +189,7 @@ function NodePreview({ node }: { node: ScanNode }) {
               <span className="text-xs text-muted-foreground font-mono w-12">CT{lxc.ctid}</span>
               <span className="text-sm">{lxc.name}</span>
               {lxc.ip && <span className="text-xs text-muted-foreground font-mono">{lxc.ip}</span>}
+              {lxc.port && <span className="text-xs text-muted-foreground font-mono">:{lxc.port}</span>}
               {lxc.hasDocker && <span className="text-xs text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">Docker</span>}
               <span className={`ml-auto text-xs px-1.5 py-0.5 rounded ${lxc.status === 'running' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-muted text-muted-foreground'}`}>{lxc.status}</span>
             </div>

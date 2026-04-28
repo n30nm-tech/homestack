@@ -17,6 +17,7 @@ interface ScanLxc {
   cpu?: number | null
   ram?: number | null
   ip?: string | null
+  port?: number | null
   hasDocker?: boolean
 }
 
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
             virtualHostId: host.id,
             status: proxmoxStatusToApp(lxc.status),
             ip: lxc.ip ?? null,
+            port: lxc.port ?? null,
             hasDocker: lxc.hasDocker ?? false,
           },
         })
@@ -141,6 +143,7 @@ export async function POST(req: NextRequest) {
           data: {
             status: proxmoxStatusToApp(lxc.status),
             ip: lxc.ip ?? existing.ip,
+            port: lxc.port ?? existing.port,
           },
         })
         summary.skipped++
