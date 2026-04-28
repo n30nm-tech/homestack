@@ -76,11 +76,9 @@ if [ "$USE_DOCKER_DB" -eq 1 ]; then
   done
   print "Postgres ready"
 
-  # Ensure .env uses docker db
   grep -q "DATABASE_URL" .env || echo 'DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"' >> .env
   sed -i.bak 's|DATABASE_URL=.*|DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"|' .env && rm -f .env.bak
 else
-  # Use local postgres — don't overwrite DATABASE_URL if already set
   if ! grep -q "^DATABASE_URL=" .env 2>/dev/null || grep -q 'DATABASE_URL=""' .env 2>/dev/null; then
     echo 'DATABASE_URL="postgresql://homestack:homestack@localhost:5432/homestack"' >> .env
   fi
@@ -97,7 +95,7 @@ npx prisma generate 2>&1 | grep -v "tip\|Tip\|prism\|Prisma schema\|Environment"
 
 # ── Database migration ────────────────────────────────────────────────────────
 print "Applying database schema…"
-npx prisma db push --skip-generate 2>&1 | grep -E "(sync|error|Error)" || true
+npx prisma db push --skip-generate 2>&1 | grep -E "(sync|error|Error|successfully)" || true
 
 # ── Seed demo data (only if DB is empty) ─────────────────────────────────────
 USER_COUNT=$(psql "$DATABASE_URL" -tAc 'SELECT count(*) FROM "User";' 2>/dev/null || echo "0")
@@ -105,14 +103,19 @@ if [ "$USER_COUNT" = "0" ]; then
   print "Seeding demo data…"
   npx tsx prisma/seed.ts 2>&1 | grep -E "(✅|❌|Login|🔐|Seed)" || true
 else
-  print "Database has data — skipping seed (run 'npx tsx prisma/seed.ts' manually to reseed)"
+  print "Database has data — skipping seed"
 fi
 
 # ── Build (production) ───────────────────────────────────────────────────────
 print "Building app…"
 npm run build
 
-# ── Done ──────────────────────────────────────────────────────────────────────
+# ── Free port 3000 ───────────────────────────────────────────────────────────
+fuser -k 3000/tcp 2>/dev/null || true
+pkill -f "next dev" 2>/dev/null || true
+sleep 1
+
+# ── Start production server (via PM2 if available, else foreground) ───────────
 echo ""
 echo -e "${GREEN}${BOLD}✓ HomeStack is ready${NC}"
 echo ""
@@ -120,11 +123,14 @@ echo -e "  ${BOLD}URL:${NC}      http://localhost:3000"
 echo -e "  ${BOLD}Login:${NC}    admin@homestack.local"
 echo -e "  ${BOLD}Password:${NC} homestack"
 echo ""
-echo -e "  Press ${BOLD}Ctrl+C${NC} to stop"
-echo ""
 
-# ── Free port 3000 ───────────────────────────────────────────────────────────
-fuser -k 3000/tcp 2>/dev/null || true
-
-# ── Start production server ───────────────────────────────────────────────────
-npm start
+if command -v pm2 &>/dev/null; then
+  pm2 delete homestack 2>/dev/null || true
+  pm2 start "npm start" --name homestack
+  pm2 save
+  echo -e "  Running via PM2. Use ${BOLD}pm2 logs homestack${NC} to view logs."
+else
+  echo -e "  Press ${BOLD}Ctrl+C${NC} to stop"
+  echo ""
+  npm start
+fi
