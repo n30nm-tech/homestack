@@ -333,6 +333,12 @@ export default async function DashboardPage() {
 
           </div>
         </div>
+
+        {/* Version */}
+        <p className="text-center text-xs text-muted-foreground/40 pt-2 pb-4">
+          build #{process.env.NEXT_PUBLIC_BUILD_NUMBER} · {process.env.NEXT_PUBLIC_BUILD_HASH}
+        </p>
+
       </div>
     </div>
   )
