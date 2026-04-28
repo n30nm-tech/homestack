@@ -9,7 +9,7 @@ import { Terminal, CheckCircle, Copy, Check, ChevronDown, ChevronRight } from 'l
 
 // ─── The script users run on their Proxmox host ───────────────────────────────
 
-const SCAN_SCRIPT = `#!/usr/bin/env python3
+const SCAN_SCRIPT = `python3 << 'PYEOF'
 import json, subprocess, re
 
 def pvesh(path):
@@ -78,7 +78,8 @@ for n in nodes_raw:
 
 print("---HOMESTACK_SCAN_START---")
 print(json.dumps(result, indent=2))
-print("---HOMESTACK_SCAN_END---")`
+print("---HOMESTACK_SCAN_END---")
+PYEOF`
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -265,10 +266,22 @@ export function ProxmoxImportDialog() {
 
               {step === 'script' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Copy this script and run it on your Proxmox host:</p>
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-300">
-                    <strong>SSH into your Proxmox host</strong>, then run:<br />
-                    <span className="font-mono">python3 proxmox-scan.py</span> — or paste directly into a Python3 session.
+                  <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                    <p className="text-sm font-medium">How it works</p>
+                    <ol className="space-y-2 text-sm text-muted-foreground list-none">
+                      <li className="flex gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
+                        <span>SSH into your <strong className="text-foreground">Proxmox host</strong> (not the HomeStack LXC)</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                        <span><strong className="text-foreground">Copy the command below</strong> and paste it directly into the Proxmox shell — it runs immediately, no file needed</span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
+                        <span><strong className="text-foreground">Copy all the output</strong> it produces and paste it into the next step</span>
+                      </li>
+                    </ol>
                   </div>
                   <ScriptBlock script={SCAN_SCRIPT} />
                   <div className="flex justify-end">
@@ -279,7 +292,7 @@ export function ProxmoxImportDialog() {
 
               {step === 'paste' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Paste the full output from the script here:</p>
+                  <p className="text-sm text-muted-foreground">Copy <strong className="text-foreground">everything</strong> the Proxmox shell printed and paste it below — including the <code className="font-mono text-xs bg-muted px-1 rounded">---HOMESTACK_SCAN_START---</code> and <code className="font-mono text-xs bg-muted px-1 rounded">---HOMESTACK_SCAN_END---</code> lines.</p>
                   <Textarea
                     className="font-mono text-xs h-56"
                     placeholder={`---HOMESTACK_SCAN_START---\n{\n  "version": 1,\n  "nodes": [...]\n}\n---HOMESTACK_SCAN_END---`}
